@@ -13,3 +13,6 @@ venv/
 
 # OS / editor cruft
 .DS_Store
+
+# Regenerated eval artifacts (live stage-1 output) — not a source of truth
+*.live.json

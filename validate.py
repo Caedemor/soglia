@@ -17,6 +17,7 @@ Tiers:
   YELLOW — worth a glance, not blocking (mostly produced upstream by extraction;
            a few are derivable here).
 """
+import re
 from dataclasses import dataclass
 from datetime import date
 
@@ -26,6 +27,42 @@ VALID_TIPI = HEAD_TYPES | MEMBER_TYPES          # {"16","17","18","19","20"}
 VALID_SESSO = {"1", "2"}
 WIDTHS = dict(FIELD_SPEC)
 MAX_PLAUSIBLE_AGE = 120
+
+# Whole-word tokens that betray a count / placeholder / note sitting in a name
+# column (e.g. "Al.Mat. arrivi 18 pax", "names pending", "TBD"). Matched as
+# tokens, case-insensitively — never as substrings, so real surnames are safe.
+NAME_PLACEHOLDER_TOKENS = {"pax", "arrivi", "pending", "tbd", "totale"}
+
+
+def _implausible_name(value: str):
+    """Return a short reason if `value` does not read as a personal name, else None.
+
+    Judged by CATEGORY, never by matching a specific string, so it degrades
+    safely on weird inputs we have not seen — not just on "Al.Mat":
+      - no alphabetic character at all (e.g. "—", "///");
+      - contains digits (no personal name does);
+      - contains a count/placeholder token as a whole word.
+
+    Deliberately CONSERVATIVE. A false positive only costs a human a glance, but
+    alert fatigue is real — so this must NOT fire on unusual-but-real names:
+    Cyrillic, Polish diacritics, compound given names, honorific prefixes
+    ("Ks."), or role markers ("GUIDE NOWAK") are all valid here and handled
+    elsewhere. Empty values are not judged here — absence is "mancante".
+    """
+    v = value.strip()
+    if not v:
+        return None
+    if not any(ch.isalpha() for ch in v):
+        return "nessuna lettera"
+    if any(ch.isdigit() for ch in v):
+        return "contiene cifre"
+    if "n/a" in v.lower():
+        return "segnaposto 'n/a'"
+    tokens = set(re.findall(r"[^\W\d_]+", v.lower()))     # unicode letter-runs
+    hit = tokens & NAME_PLACEHOLDER_TOKENS
+    if hit:
+        return "contiene un segnaposto/conteggio: " + ", ".join(sorted(hit))
+    return None
 
 
 @dataclass
@@ -67,15 +104,20 @@ def validate_guest(g: Guest, *, today: date = None) -> list:
     if g.sesso not in VALID_SESSO:
         red("sesso", f"sesso deve essere 1 (M) o 2 (F), trovato {g.sesso!r}")
 
-    # cognome / nome — present and within width
-    if not g.cognome.strip():
-        red("cognome", "cognome mancante")
-    elif len(g.cognome) > WIDTHS["cognome"]:
-        red("cognome", f"cognome troppo lungo ({len(g.cognome)} > {WIDTHS['cognome']})")
-    if not g.nome.strip():
-        red("nome", "nome mancante")
-    elif len(g.nome) > WIDTHS["nome"]:
-        red("nome", f"nome troppo lungo ({len(g.nome)} > {WIDTHS['nome']})")
+    # cognome / nome — present, plausibly a personal name, and within width.
+    # The plausibility gate catches a count/placeholder/note that landed in a
+    # name column (e.g. a held "Al.Mat. arrivi 18 pax" row): it surfaces as RED
+    # and blocks submission. The row is NOT dropped — transcribe still emits it,
+    # validate flags it, is_submittable holds it back for a human.
+    for fld, val in (("cognome", g.cognome), ("nome", g.nome)):
+        if not val.strip():
+            red(fld, f"{fld} mancante")
+            continue
+        reason = _implausible_name(val)
+        if reason:
+            red(fld, f"{fld} non sembra un nome di persona ({reason}): {val!r}")
+        elif len(val) > WIDTHS[fld]:
+            red(fld, f"{fld} troppo lungo ({len(val)} > {WIDTHS[fld]})")
 
     # data di nascita — present, real, plausible
     if not g.data_nascita.strip():
