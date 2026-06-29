@@ -1,0 +1,16 @@
+{
+  "header_rows": 2,
+  "name_slots": [
+    {"surname_column": 16, "firstname_column": 17},
+    {"surname_column": 18, "firstname_column": 19}
+  ],
+  "fields": {},
+  "default_role": "20",
+  "skip": {"rule": "column_startswith", "column": 16, "prefix": "Al.Mat"},
+  "review_notes": [
+    "A single row can list two people: primary occupant in columns 16-17, second occupant of a twin in columns 18-19. A row therefore yields one or two guests.",
+    "Row 1 is a summary line and row 2 is the header, so data begins at row 3 (header_rows = 2).",
+    "Rows whose surname column begins with 'Al.Mat' are held capacity ('names pending'), not real guests, and are skipped.",
+    "This list carries names and logistics only — no birth date, sex, citizenship, birthplace, or document. Every guest needs those captured before submission."
+  ]
+}

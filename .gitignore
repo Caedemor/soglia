@@ -1,0 +1,15 @@
+# SAFETY: never commit real guest data or the local database (passport data).
+# Only anonymized samples in data/ belong in git.
+real-data/
+*.db
+soglia.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor cruft
+.DS_Store

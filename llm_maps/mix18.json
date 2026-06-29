@@ -1,0 +1,17 @@
+{
+  "header_rows": 1,
+  "name_slots": [{"combined_column": 1, "name_order": "surname_first"}],
+  "fields": {
+    "data_nascita":     {"column": 4, "normalizer": "dotted_date"},
+    "numero_documento": {"column": 5, "normalizer": "passthrough"},
+    "tipo_documento":   {"column": 5, "normalizer": "doc_type_passport"}
+  },
+  "default_role": "20",
+  "role": {"rule": "value_equals", "column": 7, "equals": "TOUR-LEADER", "then": "18", "else": "20"},
+  "review_notes": [
+    "Column 1 holds the full name as 'SURNAME Firstname' in mixed Latin/Cyrillic script; split on the first space.",
+    "Column 5 (Паспорт) is a passport number, so the document type is passport when a number is present.",
+    "No columns for sex, citizenship, or birthplace — these must be inferred or captured at check-in.",
+    "Column 7 marks TOUR-LEADER and DRIVER (service staff): the tour leader has no passport and the drivers have no birth date — expect these to stay flagged."
+  ]
+}

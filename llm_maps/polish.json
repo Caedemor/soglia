@@ -1,0 +1,14 @@
+{
+  "header_rows": 1,
+  "name_slots": [{"surname_column": 1, "firstname_column": 2}],
+  "fields": {"data_nascita": {"column": 3, "normalizer": "passthrough"}},
+  "default_role": "20",
+  "skip": {"rule": "column_not_digit", "column": 0},
+  "review_notes": [
+    "Surname and first name are in separate columns (1 and 2).",
+    "Column 0 is a running guest number; only numbered rows are guests. The header occupies two rows and a room-type legend (DBL/TRP/'No. of rooms') sits in the footer — requiring a numeric No. excludes both.",
+    "Some surname cells carry a marker, not just a name: 'GUIDE NOWAK' (tour guide) and 'Ks. KOWALCZYK' ('Ksiądz' = Reverend). The marker should be stripped from the surname and recorded as a role — FLAGGED for human review, not auto-stripped.",
+    "Birth dates are present (column 3). No passport, sex, citizenship, or birthplace columns.",
+    "Room type (column 4) is merged across the two occupants of each double room."
+  ]
+}

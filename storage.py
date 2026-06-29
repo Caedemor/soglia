@@ -1,0 +1,110 @@
+"""
+Soglia — persistence (the application's memory).
+
+A single local SQLite file, soglia.db, is the database: no server, no network,
+nothing in the cloud — `import sqlite3` is built into Python. This is what
+carries a list across the gap where a human walks away (upload Monday, submit
+Wednesday) instead of evaporating when a script ends.
+
+Tables follow the §8 schema. The foreign keys (guest.list_version_id ->
+list_version.id -> guest_list.id) are the relational links we sketched: a list
+has versions, a version has guests.
+
+Scope note: this persists the CORE guest data (the flat Guest). Per-field
+provenance (field_meta: verbatim / origin / tier) and the Stay / Party tables
+arrive together with the review UI — the UI is what reads provenance, so they
+belong to the same step. Adding them later is just more tables + columns.
+"""
+import datetime
+import sqlite3
+
+from tracciato import Guest
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS guest_list (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    hotel       TEXT,
+    created_at  TEXT
+);
+CREATE TABLE IF NOT EXISTS list_version (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    guest_list_id   INTEGER REFERENCES guest_list(id),
+    source_filename TEXT,
+    created_at      TEXT
+);
+CREATE TABLE IF NOT EXISTS guest (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    list_version_id  INTEGER REFERENCES list_version(id),
+    idx              INTEGER,                 -- position within the list
+    tipo_alloggiato  TEXT, cognome TEXT, nome TEXT, sesso TEXT,
+    data_nascita     TEXT, born_in_italy INTEGER,
+    comune_nascita   TEXT, provincia_nascita TEXT, stato_nascita TEXT,
+    cittadinanza     TEXT, tipo_documento TEXT, numero_documento TEXT, luogo_rilascio TEXT
+);
+"""
+
+# the Guest fields we store, in one place so save/load can't drift apart
+_GUEST_COLS = ["tipo_alloggiato", "cognome", "nome", "sesso", "data_nascita",
+               "born_in_italy", "comune_nascita", "provincia_nascita",
+               "stato_nascita", "cittadinanza", "tipo_documento",
+               "numero_documento", "luogo_rilascio"]
+
+
+def connect(path="soglia.db"):
+    conn = sqlite3.connect(path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def init_db(conn):
+    conn.executescript(SCHEMA)
+    conn.commit()
+
+
+def _now():
+    return datetime.datetime.now().isoformat(timespec="seconds")
+
+
+def save_list(conn, guests, *, hotel, source_filename):
+    """Persist a parsed list as a new version. Returns the list_version id."""
+    cur = conn.cursor()
+    cur.execute("INSERT INTO guest_list (hotel, created_at) VALUES (?, ?)", (hotel, _now()))
+    gl_id = cur.lastrowid
+    cur.execute("INSERT INTO list_version (guest_list_id, source_filename, created_at) "
+                "VALUES (?, ?, ?)", (gl_id, source_filename, _now()))
+    lv_id = cur.lastrowid
+
+    cols = ["list_version_id", "idx"] + _GUEST_COLS
+    placeholders = ", ".join("?" * len(cols))
+    sql = f"INSERT INTO guest ({', '.join(cols)}) VALUES ({placeholders})"
+    for i, g in enumerate(guests):
+        vals = [lv_id, i]
+        for c in _GUEST_COLS:
+            v = getattr(g, c)
+            vals.append(int(v) if c == "born_in_italy" else v)
+        cur.execute(sql, vals)
+
+    conn.commit()
+    return lv_id
+
+
+def load_list(conn, list_version_id):
+    """Rebuild the Guest objects for a saved version."""
+    sql = f"SELECT {', '.join(_GUEST_COLS)} FROM guest WHERE list_version_id = ? ORDER BY idx"
+    out = []
+    for row in conn.execute(sql, (list_version_id,)).fetchall():
+        kw = dict(zip(_GUEST_COLS, row))
+        kw["born_in_italy"] = bool(kw["born_in_italy"])
+        out.append(Guest(**kw))
+    return out
+
+
+def list_versions(conn):
+    """Every saved version: (version_id, hotel, source_filename, when, guest_count)."""
+    return conn.execute("""
+        SELECT lv.id, gl.hotel, lv.source_filename, lv.created_at, COUNT(g.id)
+        FROM list_version lv
+        JOIN guest_list gl ON gl.id = lv.guest_list_id
+        LEFT JOIN guest g ON g.list_version_id = lv.id
+        GROUP BY lv.id ORDER BY lv.id
+    """).fetchall()
