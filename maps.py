@@ -80,6 +80,7 @@ POLISH_MAP = ColumnMap(
     name_slots=[NameSlot(surname_column=1, firstname_column=2)],
     default_role="20",
     skip_row=_polish_skip,
+    skip_desc="column_not_digit col0",          # same wording stage 1 compiles, so maps match
     fields={"data_nascita": FieldRule(column=3, normalizer="passthrough")},  # reader already DD/MM/YYYY
 )
 def parse_polish(path=POLISH_XLSX):
@@ -99,6 +100,7 @@ PARK_MAP = ColumnMap(
     ],
     default_role="20",
     skip_row=_park_skip,
+    skip_desc='column_startswith col16 "Al.Mat"',   # same wording stage 1 compiles
     fields={},                                        # no Alloggiati identity fields in this list
 )
 def parse_park(path=PARK_XLSX):

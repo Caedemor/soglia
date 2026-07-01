@@ -123,11 +123,15 @@ def parse_map_json(text):
         fields[fname] = FieldRule(column=rule.get("column"), normalizer=norm)
 
     skip_row = None
+    skip_desc = ""
     if "skip" in data and data["skip"]:
         spec = data["skip"]
         if spec["rule"] not in SKIP_RULES:
             raise ValueError(f"unknown skip rule: {spec['rule']!r}")
         skip_row = SKIP_RULES[spec["rule"]](spec)
+        skip_desc = f"{spec['rule']} col{spec.get('column')}"
+        if spec.get("prefix"):
+            skip_desc += f' "{spec["prefix"]}"'
 
     role_rule = None
     if "role" in data and data["role"]:
@@ -143,6 +147,7 @@ def parse_map_json(text):
         role_rule=role_rule,
         default_role=data.get("default_role", "20"),
         skip_row=skip_row,
+        skip_desc=skip_desc,
     )
     return cmap, data.get("review_notes", [])
 

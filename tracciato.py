@@ -63,6 +63,10 @@ class Guest:
     tipo_documento: str = ""       # e.g. "PASOR"
     numero_documento: str = ""
     luogo_rilascio: str = ""       # 9-char place code
+    # Provenance, set by stage 2 when this row matched the map's skip rule. The
+    # row is STILL emitted (never silently dropped); validate turns a non-empty
+    # value into a RED so a wrongly-skipped real guest surfaces for review.
+    skip_flag: str = ""
 
 
 def _field_values(g: Guest) -> dict:

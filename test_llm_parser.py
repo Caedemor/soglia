@@ -11,10 +11,14 @@ from maps import (read_docx_rows, read_xlsx_rows, MIX18_DOCX, POLISH_XLSX, PARK_
 from llm_parser import infer_map, parse_map_json, replay_caller, anthropic_caller
 from parser import transcribe
 
+# Counts reflect NON-DESTRUCTIVE skips: a skip rule no longer deletes rows, it
+# flags them. So polish also emits its 7 header/legend rows (48 guests + 7) and
+# park emits its 9 held "Al.Mat" rows (23 crew + 9) — all skip-flagged for review,
+# never silently dropped. mix18 has no skip rule, so it is unchanged.
 CASES = [
     ("MIX18",  read_docx_rows, MIX18_DOCX, "llm_maps/mix18.json",  parse_mix18, 39),
-    ("POLISH", read_xlsx_rows, POLISH_XLSX, "llm_maps/polish.json", parse_polish, 48),
-    ("PARK",   read_xlsx_rows, PARK_XLSX,   "llm_maps/park.json",   parse_park,   23),
+    ("POLISH", read_xlsx_rows, POLISH_XLSX, "llm_maps/polish.json", parse_polish, 55),
+    ("PARK",   read_xlsx_rows, PARK_XLSX,   "llm_maps/park.json",   parse_park,   32),
 ]
 
 

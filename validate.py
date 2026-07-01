@@ -96,6 +96,12 @@ def validate_guest(g: Guest, *, today: date = None) -> list:
     def red(field, msg):
         issues.append(Issue(field, "red", msg))
 
+    # skip provenance — a row the map's skip rule matched is emitted (not dropped)
+    # and surfaced here, so a wrongly-skipped REAL guest can never vanish silently.
+    if g.skip_flag:
+        red("skip_flag", f"riga esclusa dalla regola del modello ({g.skip_flag}) — "
+                         "confermare che non sia un ospite reale")
+
     # tipo alloggiato
     if g.tipo_alloggiato not in VALID_TIPI:
         red("tipo_alloggiato", f"tipo alloggiato non valido: {g.tipo_alloggiato!r}")

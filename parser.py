@@ -95,6 +95,7 @@ class ColumnMap:
     role_rule: Optional[Callable[[list], str]] = None     # row -> tipo_alloggiato code
     default_role: str = "20"                              # membro gruppo
     skip_row: Optional[Callable[[list], bool]] = None     # e.g. held "names pending" rows
+    skip_desc: str = ""                                   # human-readable skip rule, for the review flag
 
 
 def _value(row: list, rule: FieldRule) -> str:
@@ -111,9 +112,15 @@ CANON_FIELDS = ("sesso", "data_nascita", "comune_nascita", "provincia_nascita",
 
 
 def transcribe_row(row: list, cmap: ColumnMap) -> list:
-    """One raw row -> a list of canonical Guests (0, 1, or more), per the map."""
-    if cmap.skip_row is not None and cmap.skip_row(row):
-        return []
+    """One raw row -> a list of canonical Guests (0, 1, or more), per the map.
+
+    A map's skip_row is treated as a REVIEW HINT, not a delete: a matched row
+    that still carries a name is emitted with `skip_flag` set, so a real guest
+    the model wrongly skipped surfaces (RED) instead of vanishing. Only rows that
+    yield no name at all (genuine blanks) produce nothing.
+    """
+    matched_skip = cmap.skip_row is not None and cmap.skip_row(row)
+    flag = (cmap.skip_desc or "matched the map's skip rule") if matched_skip else ""
 
     vals = {f: _value(row, cmap.fields[f]) for f in CANON_FIELDS if f in cmap.fields}
     tipo = cmap.default_role
@@ -137,13 +144,49 @@ def transcribe_row(row: list, cmap: ColumnMap) -> list:
             tipo_documento=vals.get("tipo_documento", ""),
             numero_documento=vals.get("numero_documento", ""),
             luogo_rilascio=vals.get("luogo_rilascio", ""),
+            skip_flag=flag,
         ))
     return guests
 
 
 def transcribe(rows: list, cmap: ColumnMap) -> list:
-    """Whole table -> flat list of Guests, skipping header rows and empty/held rows."""
+    """Whole table -> flat list of Guests. Header rows and genuine blanks yield
+    nothing; rows that matched the skip rule are emitted WITH skip_flag set."""
     out = []
     for r in rows[cmap.header_rows:]:
         out.extend(transcribe_row(r, cmap))
     return out
+
+
+@dataclass
+class TranscriptionReport:
+    """Deterministic count reconciliation for one transcription pass — so a skip
+    never causes a silent count delta."""
+    input_rows: int
+    header_rows: int
+    data_rows: int
+    guests: int
+    skip_flagged: int
+    skip_desc: str
+
+    def summary(self) -> str:
+        s = (f"input {self.input_rows} rows ({self.data_rows} data after "
+             f"{self.header_rows} header), {self.guests} guests emitted")
+        if self.skip_flagged:
+            s += (f"; {self.skip_flagged} flagged for review by skip rule "
+                  f"'{self.skip_desc or 'unnamed'}' (emitted, NOT dropped)")
+        return s
+
+
+def transcribe_report(rows: list, cmap: ColumnMap) -> TranscriptionReport:
+    """transcribe(), plus an explicit account of how many rows the skip rule
+    flagged. Nothing is dropped, so guests + genuine-blanks == data rows."""
+    guests = transcribe(rows, cmap)
+    return TranscriptionReport(
+        input_rows=len(rows),
+        header_rows=cmap.header_rows,
+        data_rows=max(0, len(rows) - cmap.header_rows),
+        guests=len(guests),
+        skip_flagged=sum(1 for g in guests if g.skip_flag),
+        skip_desc=cmap.skip_desc,
+    )
