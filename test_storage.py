@@ -78,7 +78,7 @@ def main():
     # compares skip_flag too, so losing the flag cannot pass quietly.
     polish = parse_polish()
     assert sum(1 for g in polish if g.skip_flag) == 7, "fixture drift: expected 7 flagged rows"
-    pvid = save_list(c2, polish, hotel="Park Hotel Salice Terme", source_filename="polish.xlsx")
+    pvid = save_list(c2, polish, hotel="Hotel Continentale", source_filename="polish.xlsx")
     c2.close()
 
     c3 = connect(DB)

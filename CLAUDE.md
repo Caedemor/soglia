@@ -9,7 +9,7 @@ downstream, human review in the middle. Pure Python, plain-`assert` tests.
 ```
 ./run_tests.sh        # builds the golden file, runs all 10 suites, prints ALL GREEN (10/10)
 ```
-Never edit a `.py` and assume it works — run this. All 9 must stay green.
+Never edit a `.py` and assume it works — run this. All 10 must stay green.
 
 ## The one architectural rule, never break it
 The LLM touches data exactly once, at the boundary (messy doc → a `ColumnMap`).

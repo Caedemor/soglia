@@ -26,6 +26,10 @@ from dataclasses import dataclass
 # "SGL" / "No. of rooms" (no count), or "names pending" (no count — a held
 # stay with unknowable pax must not feed arithmetic that could read as
 # complete, so count-less placeholders stay guard-red guests instead).
+# Known bounded edge (review finding): a single cell mixing a full personal
+# name with a count ("ROSSI Mario 2 pax") classifies as held — the list can
+# never read complete and the verbatim is preserved for review, but the name
+# bypasses the guest list; the room-type-column follow-up is the structural fix.
 _HELD = re.compile(r"\b(\d{1,3})\s*pax\b", re.IGNORECASE)
 
 
