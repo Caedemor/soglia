@@ -2,10 +2,13 @@
 Tests for the deterministic name-plausibility guard in validate.py.
 
 Both directions matter equally:
-  (a) the 9 held "Al.Mat. arrivi N pax" placeholder rows in the Park list each
-      raise a RED name issue and are non-submittable — the silent-miss that
-      stage 1 could not catch (those rows fall outside its sample window) is now
-      caught downstream, deterministically, on EVERY row;
+  (a) the 9 held "Al.Mat. arrivi N pax" placeholder rows in the Park list are
+      now caught UPSTREAM of the guard by held-capacity recognition (stay.py)
+      — deterministically, on EVERY row, regardless of the map's skip rule
+      (stage 1's sample window never saw them). They become names_pending
+      stays, never guests. The guard remains the BACKSTOP: a placeholder that
+      escapes held recognition (e.g. count-less "names pending") is still
+      emitted as a guest and RED-flagged, non-submittable;
   (b) NOT ONE real PERSONAL NAME across the three dev samples is falsely
       flagged. The guard must not cry wolf on real names — Cyrillic, Polish
       diacritics, compound given names, the honorific "Ks. KOWALCZYK", or the
@@ -21,18 +24,18 @@ Dev samples only (maps.py). The holdout set is never read here.
 import dataclasses
 
 from validate import _implausible_name, validate_guest, is_submittable
-from parser import transcribe
+from parser import transcribe, transcribe_with_stays, ColumnMap, NameSlot
 from maps import (parse_mix18, parse_polish, parse_park,
                   read_xlsx_rows, PARK_XLSX, PARK_MAP)
 
 
-def _park_guests_no_skip():
-    """Transcribe the Park list WITHOUT the hand-written skip rule — i.e. exactly
-    what the live model's map produced (it never inferred the held-row skip).
-    This is the 32-guest output the deterministic guard has to police: 23 real
-    crew + 9 held 'Al.Mat. arrivi N pax' placeholders."""
+def _park_no_skip():
+    """The Park list WITHOUT the hand-written skip rule — i.e. exactly what the
+    live model's map produced (it never inferred the held-row skip). Held
+    recognition must catch the 9 'Al.Mat. arrivi N pax' rows anyway: it is
+    code, not map-dependent."""
     no_skip = dataclasses.replace(PARK_MAP, skip_row=None)
-    return transcribe(read_xlsx_rows(PARK_XLSX), no_skip)
+    return transcribe_with_stays(read_xlsx_rows(PARK_XLSX), no_skip)
 
 
 def _name_reds(g):
@@ -66,15 +69,30 @@ def test_heuristic_units():
     print("PASS heuristic units")
 
 
-# --- (a) every Al.Mat placeholder row is caught RED and held back ---
-def test_park_placeholders_flagged():
-    placeholders = [g for g in _park_guests_no_skip()
-                    if g.cognome.strip().lower().startswith("al.mat")]
-    assert len(placeholders) == 9, f"expected 9 held rows, got {len(placeholders)}"
-    for i, g in enumerate(placeholders):
-        assert _name_reds(g), f"Al.Mat row {i} ({g.cognome!r}) not flagged as a name issue"
-        assert not is_submittable(g), f"Al.Mat row {i} should be non-submittable"
-    print(f"PASS {len(placeholders)} Al.Mat rows flagged RED + non-submittable")
+# --- (a) placeholders: held recognition primary, the guard as backstop ---
+def test_park_placeholders_become_held():
+    # primary: even with NO skip rule, zero Al.Mat placeholders leak into guests
+    res = _park_no_skip()
+    assert len(res.guests) == 23, f"expected 23 guests, got {len(res.guests)}"
+    assert not [g for g in res.guests if g.cognome.strip().lower().startswith("al.mat")], \
+        "an Al.Mat placeholder leaked into the guest list"
+    held = [s for s in res.stays if s.status == "names_pending"]
+    assert len(held) == 9 and sum(s.pax_expected for s in held) == 18
+
+    # backstop: a COUNT-LESS placeholder escapes held recognition (no pax to
+    # count -> deliberately not held) and must land as a guard-red guest.
+    rows = [["h", "h"], ["names pending", ""], ["TBD", ""]]
+    cmap = ColumnMap(header_rows=1, default_role="20",
+                     name_slots=[NameSlot(surname_column=0, firstname_column=1)])
+    escaped = transcribe_with_stays(rows, cmap)
+    assert len(escaped.guests) == 2, "count-less placeholders must be emitted, not held"
+    assert all(s.status != "names_pending" for s in escaped.stays), \
+        "a count-less placeholder must never become held capacity"
+    for g in escaped.guests:
+        assert _name_reds(g) and not is_submittable(g), \
+            f"escaped placeholder {g.cognome!r} not guard-flagged"
+    print("PASS 9 Al.Mat rows -> held stays (map-independent); "
+          "count-less placeholders guard-flagged as backstop")
 
 
 # --- the guard generalizes: polish 'Driver N' crew slots are caught too ---
@@ -90,7 +108,7 @@ def test_polish_driver_placeholders_flagged():
 
 # --- (b) categorical: real personal names clean, placeholders caught, no in-between ---
 def test_no_false_positives_on_real_names():
-    everyone = list(_park_guests_no_skip()) + list(parse_mix18()) + list(parse_polish())
+    everyone = list(_park_no_skip().guests) + list(parse_mix18()) + list(parse_polish())
     real_names, false_pos, missed = 0, [], []
     for g in everyone:
         flagged = bool(_name_reds(g))
@@ -102,6 +120,8 @@ def test_no_false_positives_on_real_names():
             if flagged:
                 false_pos.append((g.cognome, g.nome))
     assert not false_pos, f"FALSE POSITIVES on real personal names: {false_pos}"
+    # the only placeholders left AMONG GUESTS are polish's Driver rows (park's
+    # Al.Mat rows are held stays now and never reach the guest list at all)
     assert not missed, f"placeholders the guard missed: {missed}"
     print(f"PASS zero false positives across {real_names} real personal names "
           f"(mix18 + polish + park), all placeholders caught")
@@ -109,7 +129,7 @@ def test_no_false_positives_on_real_names():
 
 if __name__ == "__main__":
     test_heuristic_units()
-    test_park_placeholders_flagged()
+    test_park_placeholders_become_held()
     test_polish_driver_placeholders_flagged()
     test_no_false_positives_on_real_names()
     print("ALL GREEN")

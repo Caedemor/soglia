@@ -11,14 +11,17 @@ from maps import (read_docx_rows, read_xlsx_rows, MIX18_DOCX, POLISH_XLSX, PARK_
 from llm_parser import infer_map, parse_map_json, replay_caller, anthropic_caller
 from parser import transcribe
 
-# Counts reflect NON-DESTRUCTIVE skips: a skip rule no longer deletes rows, it
-# flags them. So polish also emits its 7 header/legend rows (48 guests + 7) and
-# park emits its 9 held "Al.Mat" rows (23 crew + 9) — all skip-flagged for review,
-# never silently dropped. mix18 has no skip rule, so it is unchanged.
+# Counts reflect NON-DESTRUCTIVE skips plus HELD-CAPACITY recognition: a skip
+# rule flags rows instead of deleting them, so polish also emits its 7 header/
+# legend rows (48 guests + 7). Park's 9 held "Al.Mat" rows are recognized as
+# held capacity in code (stay.py) BEFORE the map's skip rule — they become
+# names_pending stays, never guests, so park yields its 23 real crew. mix18 has
+# neither, so it is unchanged. Parity still holds exactly: both the model map
+# and the hand map run the SAME transcriber, held recognition included.
 CASES = [
     ("MIX18",  read_docx_rows, MIX18_DOCX, "llm_maps/mix18.json",  parse_mix18, 39),
     ("POLISH", read_xlsx_rows, POLISH_XLSX, "llm_maps/polish.json", parse_polish, 55),
-    ("PARK",   read_xlsx_rows, PARK_XLSX,   "llm_maps/park.json",   parse_park,   32),
+    ("PARK",   read_xlsx_rows, PARK_XLSX,   "llm_maps/park.json",   parse_park,   23),
 ]
 
 

@@ -10,7 +10,8 @@ import os
 import docx
 from openpyxl import load_workbook
 
-from parser import ColumnMap, FieldRule, NameSlot, transcribe
+from parser import (ColumnMap, FieldRule, NameSlot, transcribe,
+                    transcribe_with_stays)
 
 # Data lives in a sibling ./data folder, resolved relative to THIS file so the
 # repo runs on any machine (no hardcoded absolute paths).
@@ -105,3 +106,9 @@ PARK_MAP = ColumnMap(
 )
 def parse_park(path=PARK_XLSX):
     return transcribe(read_xlsx_rows(path), PARK_MAP)
+
+def parse_park_stays(path=PARK_XLSX):
+    """The stays-aware view: 23 named guests on their stays + the 9 held
+    'Al.Mat' twin blocks as names_pending stays (the §13.4 reconciliation
+    input). mix18/polish compose the same via transcribe_with_stays."""
+    return transcribe_with_stays(read_xlsx_rows(path), PARK_MAP)

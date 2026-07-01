@@ -9,9 +9,11 @@ submittable), so a wrongly-skipped real guest surfaces instead of vanishing.
 
   (a) a HARMFUL skip (column_empty col5 on mix18) must NOT drop the 3 passport-
       less real guests — they are emitted-and-flagged, and no data changes;
-  (b) LEGITIMATE skips of header/legend/held rows still work and must NOT
-      skip-flag any real guest on polish/park;
-  (c) deterministic count reconciliation reports the skip delta explicitly.
+  (b) LEGITIMATE skips of header/legend rows still work and must NOT skip-flag
+      any real guest on polish; park's held "Al.Mat" rows are now recognized as
+      HELD CAPACITY (stay.py) BEFORE the map's skip rule — they become
+      names_pending stays, never guests, and never vanish (§8.5.7);
+  (c) deterministic count reconciliation reports the skip AND held deltas.
 
 Dev lists only; holdout sealed.
 """
@@ -20,7 +22,7 @@ import dataclasses
 from llm_parser import SKIP_RULES
 from maps import (read_docx_rows, read_xlsx_rows, MIX18_DOCX, PARK_XLSX,
                   MIX18_MAP, PARK_MAP, parse_mix18, parse_polish, parse_park)
-from parser import transcribe, transcribe_report
+from parser import transcribe, transcribe_report, transcribe_with_stays
 from validate import validate_guest, is_submittable
 
 
@@ -59,15 +61,20 @@ def test_harmful_skip_surfaces_not_drops():
     print("PASS (a) harmful skip surfaces 3 real guests RED, drops nothing, no data change")
 
 
-# --- (b) legitimate skips still work; no real guest is skip-flagged ------------
+# --- (b) legitimate skips still work; held rows outrank them; no real guest hit ---
 def test_legitimate_skips_flag_only_nonguests():
-    # park: 9 held Al.Mat rows flagged; the 23 real crew untouched
-    park = parse_park()
-    flagged = [g for g in park if g.skip_flag]
-    crew = [g for g in park if not g.skip_flag]
-    assert len(crew) == 23, f"park real crew changed: {len(crew)}"
-    assert len(flagged) == 9 and all(g.cognome.lower().startswith("al.mat") for g in flagged)
-    assert all(not g.skip_flag for g in crew), "a real crew member was skip-flagged"
+    # park: the 9 held "Al.Mat" rows are HELD CAPACITY now — recognized in code
+    # before the map's skip rule, so they become names_pending stays, NOT
+    # skip-flagged guests. The 23 real crew are guests, none flagged.
+    res = transcribe_with_stays(read_xlsx_rows(PARK_XLSX), PARK_MAP)
+    assert len(res.guests) == 23, f"park real crew changed: {len(res.guests)}"
+    assert all(not g.skip_flag for g in res.guests), "a real crew member was skip-flagged"
+    held = [s for s in res.stays if s.status == "names_pending"]
+    assert len(held) == 9 and all(s.verbatim.startswith("Al.Mat") for s in held)
+    assert sum(s.pax_expected for s in held) == 18, "held pax must match §13.4 (9 twins)"
+    held_ids = {s.stay_id for s in held}
+    assert all(g.stay_id not in held_ids for g in res.guests), \
+        "no guest may sit on a held stay"
 
     # polish: 7 header/legend rows flagged; the 48 numbered guests untouched
     polish = parse_polish()
@@ -93,7 +100,9 @@ def test_count_reconciliation():
     assert "column_empty col5" in rep.summary() and "NOT dropped" in rep.summary()
 
     rep_park = transcribe_report(read_xlsx_rows(PARK_XLSX), PARK_MAP)
-    assert rep_park.guests == 32 and rep_park.skip_flagged == 9
+    assert rep_park.guests == 23 and rep_park.skip_flagged == 0
+    assert rep_park.held_stays == 9 and rep_park.held_pax == 18
+    assert "held capacity" in rep_park.summary()
     print("PASS (c) reconciliation reports the skip delta explicitly:")
     print("        " + rep.summary())
 

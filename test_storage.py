@@ -6,18 +6,23 @@ The proof: save a list, CLOSE the connection, re-open a FRESH one (simulating a
 later session), load the list back — and it must be byte-identical. That round
 trip through a re-opened file is what "the data survives" actually means.
 
-Regression guarded here: skip_flag is review provenance (it drives the
-"confermare che non sia un ospite reale" RED) and must survive the database. A
-flag that evaporates between upload-Monday and submit-Wednesday would let a
-wrongly-skipped real guest go clean silently — the exact failure the flag
-exists to prevent. The Park list (9 held "Al.Mat" rows) is the fixture that
-proves it; MIX18 alone cannot, because it has no skip rule.
+Regressions guarded here:
+  - skip_flag is review provenance (it drives the "confermare che non sia un
+    ospite reale" RED) and must survive the database. A flag that evaporates
+    between upload-Monday and submit-Wednesday would let a wrongly-skipped
+    real guest go clean silently. The POLISH list (7 flagged header/legend
+    rows) is the fixture — park's Al.Mat rows are held STAYS now, not flagged
+    guests, and MIX18 has no skip rule.
+  - stays + stay_id links must survive too: park's 23 guests on their stays
+    plus 9 held names_pending stays reload intact, so reconciliation (§8.5.2)
+    computes the same 41/23/18 after a restart as before it.
 """
 import os
 import sqlite3
 
-from storage import connect, init_db, save_list, load_list, list_versions
-from maps import parse_mix18, parse_park
+from storage import connect, init_db, save_list, load_list, load_stays, list_versions
+from maps import parse_mix18, parse_polish, parse_park_stays
+from stay import reconcile
 
 DB = "/tmp/soglia_test.db"
 
@@ -71,36 +76,53 @@ def main():
 
     # REGRESSION — skip_flag survives the round trip. Dataclass equality below
     # compares skip_flag too, so losing the flag cannot pass quietly.
-    park = parse_park()
-    assert sum(1 for g in park if g.skip_flag) == 9, "fixture drift: expected 9 held rows"
-    pvid = save_list(c2, park, hotel="Park Hotel Salice Terme", source_filename="park.xlsx")
+    polish = parse_polish()
+    assert sum(1 for g in polish if g.skip_flag) == 7, "fixture drift: expected 7 flagged rows"
+    pvid = save_list(c2, polish, hotel="Park Hotel Salice Terme", source_filename="polish.xlsx")
     c2.close()
 
     c3 = connect(DB)
-    park_back = load_list(c3, pvid)
-    c3.close()
-    assert park_back == park, "round trip must preserve skip_flag too"
-    assert sum(1 for g in park_back if g.skip_flag) == 9
+    polish_back = load_list(c3, pvid)
+    assert polish_back == polish, "round trip must preserve skip_flag too"
+    assert sum(1 for g in polish_back if g.skip_flag) == 7
 
-    # MIGRATION — a soglia.db created before skip_flag existed must be upgraded
-    # in place by init_db (ALTER TABLE), not crash on the next save.
+    # REGRESSION — stays + stay_id links survive: reconciliation must compute
+    # the same §13.4 arithmetic (41/23/18) from the reloaded data.
+    park = parse_park_stays()
+    svid = save_list(c3, park.guests, hotel="Park Hotel Salice Terme",
+                     source_filename="park.xlsx", stays=park.stays)
+    c3.close()
+
+    c3b = connect(DB)
+    g_back, s_back = load_list(c3b, svid), load_stays(c3b, svid)
+    c3b.close()
+    assert g_back == park.guests and s_back == park.stays, \
+        "stays / stay_id links must survive the round trip"
+    rec = reconcile(s_back, g_back)
+    assert (rec["expected"], rec["named"], rec["pending"]) == (41, 23, 18)
+
+    # MIGRATION — a soglia.db created before skip_flag/stay_id/stay existed
+    # must be upgraded in place by init_db, not crash on the next save.
     os.remove(DB)
     legacy = sqlite3.connect(DB)
     legacy.executescript(_LEGACY_SCHEMA)
     legacy.close()
     c4 = connect(DB)
     init_db(c4)
-    mvid = save_list(c4, park, hotel="Park Hotel Salice Terme", source_filename="park.xlsx")
-    migrated = load_list(c4, mvid)
+    mvid = save_list(c4, park.guests, hotel="Park Hotel Salice Terme",
+                     source_filename="park.xlsx", stays=park.stays)
+    migrated_g, migrated_s = load_list(c4, mvid), load_stays(c4, mvid)
     c4.close()
-    assert migrated == park, "migrated legacy database must round-trip skip_flag"
+    assert migrated_g == park.guests and migrated_s == park.stays, \
+        "migrated legacy database must round-trip stays and both new guest columns"
 
     os.remove(DB)
     print("\u2713 PASS \u2014 persistence works.")
     print("        39 guests saved, connection closed, re-opened from the file, loaded back IDENTICAL;")
     print("        multiple versions coexist with correct counts (39 and 3);")
-    print("        skip_flag survives the round trip (Park list: 9 held rows still flagged after reload);")
-    print("        a pre-skip_flag database is migrated in place by init_db.")
+    print("        skip_flag survives the round trip (polish: 7 flagged rows intact after reload);")
+    print("        stays + stay_id links survive (park reloads to the same 41/23/18 reconciliation);")
+    print("        a pre-skip_flag/pre-stay database is migrated in place by init_db.")
 
 
 if __name__ == "__main__":

@@ -67,6 +67,11 @@ class Guest:
     # row is STILL emitted (never silently dropped); validate turns a non-empty
     # value into a RED so a wrongly-skipped real guest surfaces for review.
     skip_flag: str = ""
+    # Link to the row's Stay (stay.py) — the room-shaped unit this guest
+    # occupies; a park-style twin is one Stay carrying two Guests. None = the
+    # guest predates stays (bespoke parsers, hand-built fixtures). The
+    # FORMATTER never reads this: stays produce no schedina content.
+    stay_id: int = None
 
 
 def _field_values(g: Guest) -> dict:

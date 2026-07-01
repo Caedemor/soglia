@@ -21,6 +21,7 @@ else changes. That is the whole point of having an orchestrator.
 from dataclasses import dataclass, field
 
 from validate import validate_guest, Issue
+from stay import reconcile, completeness_status
 from infer import suggest, Suggestion
 from tracciato import Guest, format_schedina, format_tracciato
 
@@ -47,6 +48,7 @@ class GuestResult:
 class ListResult:
     """The single object the pipeline hands back for a whole list."""
     guests: list            # list[GuestResult]
+    stays: list = field(default_factory=list)   # list[Stay] — named + held (§13.4)
 
     @property
     def total(self):
@@ -67,6 +69,16 @@ class ListResult:
             "blocked": len(self.blocked),
         }
 
+    def completeness(self) -> dict:
+        """§8.5.2 + §8.5.1: PAX-aware reconciliation and the completeness axis.
+        {expected, named, pending, overage, status}. Guests without a stay link
+        (legacy parsers) count 1-for-1; a held room keeps status at
+        awaiting_completion until its people are named. Orthogonal to
+        reconciliation() (submittability), per the addendum's two axes."""
+        rec = reconcile(self.stays, [g.guest for g in self.guests])
+        rec["status"] = completeness_status(rec)
+        return rec
+
     def tracciato(self, *, data_arrivo: str, giorni_permanenza: int) -> str:
         """The police file for the submittable guests (bytes the portal accepts)."""
         ready = [g.guest for g in self.submittable]
@@ -74,7 +86,7 @@ class ListResult:
                                 giorni_permanenza=giorni_permanenza)
 
 
-def process_list(parser, *, infer_country_code: str = None,
+def process_list(parser, *, stays=None, infer_country_code: str = None,
                  infer_country_name: str = None) -> ListResult:
     """
     Run the pipeline.
@@ -82,7 +94,8 @@ def process_list(parser, *, infer_country_code: str = None,
     `parser` is any zero-argument callable returning a list of objects that each
     expose `.guest` (a canonical Guest) and, optionally, `.row` / `.room` /
     `.order` / `.role_note` for context. The MIX18 parser satisfies this; so will
-    the real one. Pass infer_* to attach advisory suggestions (optional).
+    the real one. Pass infer_* to attach advisory suggestions (optional), and
+    stays= (from transcribe_with_stays) to enable completeness() reconciliation.
     """
     parsed = parser()
     results = []
@@ -96,4 +109,4 @@ def process_list(parser, *, infer_country_code: str = None,
         results.append(GuestResult(index=i, guest=g,
                                     issues=validate_guest(g),
                                     suggestions=suggestions, meta=meta))
-    return ListResult(guests=results)
+    return ListResult(guests=results, stays=stays or [])
