@@ -15,6 +15,7 @@ provenance (field_meta: verbatim / origin / tier) and the Stay / Party tables
 arrive together with the review UI — the UI is what reads provenance, so they
 belong to the same step. Adding them later is just more tables + columns.
 """
+import dataclasses
 import datetime
 import sqlite3
 
@@ -39,7 +40,8 @@ CREATE TABLE IF NOT EXISTS guest (
     tipo_alloggiato  TEXT, cognome TEXT, nome TEXT, sesso TEXT,
     data_nascita     TEXT, born_in_italy INTEGER,
     comune_nascita   TEXT, provincia_nascita TEXT, stato_nascita TEXT,
-    cittadinanza     TEXT, tipo_documento TEXT, numero_documento TEXT, luogo_rilascio TEXT
+    cittadinanza     TEXT, tipo_documento TEXT, numero_documento TEXT, luogo_rilascio TEXT,
+    skip_flag        TEXT DEFAULT ''           -- review provenance: matched the map's skip rule
 );
 """
 
@@ -47,7 +49,13 @@ CREATE TABLE IF NOT EXISTS guest (
 _GUEST_COLS = ["tipo_alloggiato", "cognome", "nome", "sesso", "data_nascita",
                "born_in_italy", "comune_nascita", "provincia_nascita",
                "stato_nascita", "cittadinanza", "tipo_documento",
-               "numero_documento", "luogo_rilascio"]
+               "numero_documento", "luogo_rilascio", "skip_flag"]
+
+# Every Guest field must be persisted. A field added to Guest without a column
+# here silently evaporates on the next save/load — exactly how skip_flag (review
+# provenance, a RED) was once lost. Fail loudly at import instead.
+assert set(_GUEST_COLS) == {f.name for f in dataclasses.fields(Guest)}, \
+    "SCHEMA + _GUEST_COLS must cover every Guest field — update them together"
 
 
 def connect(path="soglia.db"):
@@ -58,6 +66,12 @@ def connect(path="soglia.db"):
 
 def init_db(conn):
     conn.executescript(SCHEMA)
+    # Migration: skip_flag arrived after the first release, and CREATE TABLE IF
+    # NOT EXISTS won't touch an existing guest table — so upgrade an old
+    # soglia.db in place rather than crash on the next save.
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(guest)")]
+    if "skip_flag" not in cols:
+        conn.execute("ALTER TABLE guest ADD COLUMN skip_flag TEXT DEFAULT ''")
     conn.commit()
 
 
