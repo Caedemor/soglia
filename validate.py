@@ -112,9 +112,11 @@ def validate_guest(g: Guest, *, today: date = None) -> list:
 
     # cognome / nome — present, plausibly a personal name, and within width.
     # The plausibility gate catches a count/placeholder/note that landed in a
-    # name column (e.g. a held "Al.Mat. arrivi 18 pax" row): it surfaces as RED
-    # and blocks submission. The row is NOT dropped — transcribe still emits it,
-    # validate flags it, is_submittable holds it back for a human.
+    # name column (e.g. "Driver 1", "names pending"). It is the BACKSTOP: a held
+    # "Al.Mat. arrivi 18 pax" row normally becomes a names_pending Stay in
+    # stage 2 (stay.py) and never reaches validation — but anything that escapes
+    # (count-less or mixed placeholders) is emitted, flagged RED here, and held
+    # back by is_submittable. Never dropped.
     for fld, val in (("cognome", g.cognome), ("nome", g.nome)):
         if not val.strip():
             red(fld, f"{fld} mancante")

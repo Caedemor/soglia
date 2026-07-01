@@ -41,7 +41,7 @@ def main():
                   read_docx_rows(MIX18_DOCX), parse_mix18)
     b = summarize("POLISH — xlsx (separate name cols; has DOB; merged rooms; blank row)",
                   read_xlsx_rows(POLISH_XLSX), parse_polish)
-    c = summarize("PARK HOTEL — xlsx (TWO people per row; names only; held rows skipped)",
+    c = summarize("PARK HOTEL — xlsx (TWO people per row; names only; held rows → stays)",
                   read_xlsx_rows(PARK_XLSX), parse_park)
 
     print(f"\n{'='*72}\nThree very different real lists, one engine: {a} + {b} + {c} guests parsed.")

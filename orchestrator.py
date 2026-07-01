@@ -12,6 +12,7 @@ Pipeline:
                                       +--> validate each (the gate)
                                       +--> [optional] inference suggestions
                                       +--> reconcile (counts)
+                                      +--> completeness (stays, §8.5.2)
                                       +--> format the submittable ones -> bytes
 
 The parser is a SWAPPABLE INPUT, not hardwired. Today we pass in the MIX18

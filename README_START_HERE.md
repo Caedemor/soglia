@@ -26,7 +26,8 @@ You should see **ALL GREEN (10/10)**. (On Windows without bash, run instead:
 `python build_golden.py` then `python test_tracciato.py`, etc.)
 
 All three real sample lists parse through the one engine: Ukrainian .docx = 39
-guests, Polish .xlsx = 48, Italian .xlsx = 23.
+guests, Polish .xlsx = 48 (+7 legend rows emitted-and-flagged for review),
+Italian .xlsx = 23 (+9 held rooms tracked as names_pending stays).
 
 ## The one honest caveat
 The "AI" half of the product — stage 1, where a live model reads a messy document

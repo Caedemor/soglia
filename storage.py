@@ -10,10 +10,11 @@ Tables follow the §8 schema. The foreign keys (guest.list_version_id ->
 list_version.id -> guest_list.id) are the relational links we sketched: a list
 has versions, a version has guests.
 
-Scope note: this persists the CORE guest data (the flat Guest). Per-field
-provenance (field_meta: verbatim / origin / tier) and the Stay / Party tables
-arrive together with the review UI — the UI is what reads provenance, so they
-belong to the same step. Adding them later is just more tables + columns.
+Scope note: this persists the CORE guest data (the flat Guest) and, since the
+STAY foundation (addendum §8.5.8 commit 1), the stay table + guest.stay_id
+links. Per-field provenance (field_meta: verbatim / origin / tier) and the
+Party table arrive together with the review UI — the UI is what reads
+provenance, so they belong to the same step. Adding them is just more tables.
 """
 import dataclasses
 import datetime

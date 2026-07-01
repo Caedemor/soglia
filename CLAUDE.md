@@ -24,16 +24,24 @@ final file, never picks a code-table code, never talks to the portal.
 - **Null is a valid answer.** Missing fields stay missing and surface as issues; never guessed-to-fill.
 - **Inference is advisory only** (`infer.py`): suggests sex / list-level citizenship for EMPTY fields, capped "yellow", never overwrites. Deleting `infer.py` must not break the base.
 - **A row is not a guest.** Twin rows carry two people; counts are PAX-aware.
+- **Nothing vanishes unreviewably.** Junk rows emit-and-flag (`skip_flag`);
+  held "N pax" rows become `names_pending` Stays carrying the source cell
+  text verbatim (addendum §8.5.7).
 
 ## File map
 - `tracciato.py` — 168-char Alloggiati formatter + `Guest`. Golden-file tested.
 - `validate.py` — the red-issue gate (`is_submittable`).
-- `parser.py` — generalized stage-2 transcriber (map-driven).
+- `parser.py` — generalized stage-2 transcriber (map-driven; four-way row
+  dispatch: guests / held Stays / emit-and-flag / blank).
+- `stay.py` — `Stay` entity, deterministic held-capacity recognizer,
+  `reconcile()` + `completeness_status()` (addendum §8.5.2).
 - `maps.py` — file readers (`.docx` tables, `.xlsx` with merged-cell fill-down) + hand-written `ColumnMap`s for the 3 sample lists. Data path = `./data/` (relative).
 - `llm_parser.py` + `llm_maps/*.json` — stage-1 plug + replay fixtures.
-- `orchestrator.py` — `process_list(parser) → ListResult` (reds, suggestions, reconciliation, tracciato).
+- `orchestrator.py` — `process_list(parser, stays=…) → ListResult` (reds,
+  suggestions, reconciliation, completeness via stays, tracciato).
 - `infer.py` — decoupled advisory inference.
-- `storage.py` — SQLite persistence (`connect` → `init_db` → `save_list`/`load_list`).
+- `storage.py` — SQLite persistence (`connect` → `init_db` →
+  `save_list`/`load_list`; stays: `save_list(..., stays=)` / `load_stays`).
 - `data/` — three ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23).
 - `soglia-demo.jsx` — standalone React UI mockup (not yet wired to anything).
 
@@ -41,7 +49,26 @@ final file, never picks a code-table code, never talks to the portal.
 - Deterministic engine + SQLite: **built, 10/10 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
 - **Never validated live:** the stage-1 LLM call has only ever run against saved fixtures (`replay_caller`). The `ColumnMap`s in `maps.py` are hand-written stand-ins. Running stage 1 against a live model on real documents — and building the ~20-list eval set — is the key open empirical task.
-- **Incomplete-list / supplement / dual-target-export work:** design ground truth is [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md) — forward-looking spec (`STAY` held capacity, `SUBMISSION target=pms`, two-axis completeness/export state) that is **not yet in code**; treat it as authoritative for that build, not as a description of current state.
+- **Incomplete-list / supplement / dual-target-export work** (design ground
+  truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):
+  build commit **1 of 4 (§8.5.8) is in code** — the `STAY` foundation
+  (identity/stay split, twin = one `STAY` + two `GUEST`s, held capacity +
+  reconciliation). Park reconciles 41 expected / 23 named / 18 pending →
+  `awaiting_completion`; design rationale (esp. held `pax_expected` = name-slot
+  capacity, NOT the placeholder text-N) is in [PLAN-stay-foundation.md](PLAN-stay-foundation.md).
+  Remaining per §8.5.8: (2) export-state tracking + delta export, (3) supplement
+  accumulation + mismatch-tolerant reconciliation, (4) override + audit with
+  red gates. The addendum stays authoritative for those.
+
+## Known open items (small, deliberately deferred)
+- `parser.py` `norm_dotted_date`: a 2-digit year becomes "20YY" — wrong for
+  DOBs ("3.3.85" → 2085). Fix early next cycle; the validator's plausibility
+  red currently catches the worst of it.
+- `maps.py` `_mix18_role` reads `row[7]` unguarded — a short row would crash.
+- Handoff §7.4/§13 says birth-date plausibility "1920–2026"; `validate.py`
+  implements a 120-year cap. Decide which is right; align doc or code.
+- Held-capacity edge (see comment in `stay.py`): a cell mixing a full name
+  with a count classifies as held; room-type-column mapping is the fix.
 
 ## SAFETY — this code handles passport data
 - **Never commit real guest data or `soglia.db`.** `.gitignore` blocks them. Only anonymized samples in `data/` belong in git. Real lists go in `real-data/` (gitignored).

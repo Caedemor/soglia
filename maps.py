@@ -91,7 +91,7 @@ def parse_polish(path=POLISH_XLSX):
 # ---- Park Hotel xlsx: TWO people per row, names only, held rows ------------
 # Cols: ... 16 Cognome, 17 Nome, 18 Cognome 2, 19 Nome 2 ... (header on row 2).
 def _park_skip(row):
-    return len(row) > 16 and row[16].strip().startswith("Al.Mat")   # held "names pending" rows
+    return len(row) > 16 and row[16].strip().startswith("Al.Mat")   # held rows; superseded in effect by stay.py (kept for fixture parity)
 
 PARK_MAP = ColumnMap(
     header_rows=2,                                    # row 1 summary, row 2 header

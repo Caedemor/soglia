@@ -7,8 +7,9 @@ STAGE 2 transcription (follow the map, build Guests) -> here.   [THIS FILE]
 Grown to handle the variety in three real lists:
   - one OR two (or more) people per row, via name_slots;
   - a combined "SURNAME Firstname" cell OR separate surname/first-name columns;
-  - blank rows skipped automatically; a map may also supply a skip_row hint
-    (e.g. held "names pending" placeholder rows);
+  - blank rows skipped automatically; held "<N> pax" placeholder rows become
+    names_pending Stays (stay.py) BEFORE any map skip rule applies; a map may
+    also supply a skip_row hint (emit-and-flag, never drop);
   - field cleaning is format-only (e.g. 05.12.1984 -> 05/12/1984), never meaning.
 Anything not mapped is left empty so the validator surfaces it. What stage 2
 CANNOT do (e.g. recognise that "GUIDE NOWAK" hides a role marker) is left for
