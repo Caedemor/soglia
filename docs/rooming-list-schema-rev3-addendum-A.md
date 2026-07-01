@@ -29,7 +29,7 @@ Reconciliation is **per-`STAY`**, then summed:
 - `overage_i  = max(0, named_guests_on_stay_i − pax_expected_i)`
 - list `pending = Σ pending_i`; list `overage = Σ overage_i`
 
-A normal named twin: `pax_expected = 2`, 2 guests → pending 0. A held block: `pax_expected = 18`, 0 guests → pending 18. After a supplement names all 18 onto that block: 18 guests vs 18 → pending 0, `status` flips `names_pending → complete`.
+A normal named twin: `pax_expected = 2`, 2 guests → pending 0. A held block: `pax_expected = 18`, 0 guests → pending 18. After a supplement names all 18 onto that block: 18 guests vs 18 → pending 0, `status` flips `names_pending → complete`. If a supplement overfills a block (named > `pax_expected`), `STAY.status = over` — surfaced as the overage advisory (§8.5.3), never blocking completeness.
 
 **Completeness = (`pending == 0`).** Overage does **not** block completeness — an extra named guest is still a registrable person — but it surfaces as an independent advisory (§8.5.3), because an overage is often a duplicate or a data error and a human should look. The "row ≠ guest" safeguard from §13.4 stands: counting is PAX-aware (a twin contributes 2 to `pax_expected`), never a raw row count, and a held room can never silently read as complete.
 
@@ -63,7 +63,7 @@ A PMS export is a `SUBMISSION` with `target = pms`. This buys per-guest export t
 **Delta export, surfaced first; re-export always available, non-destructive.** Because Soglia cannot see the PMS, the human is the only source of truth, so:
 - A new PMS export defaults its guest set to **un-exported named guests** (the delta) — this is the no-duplicates default that handles the stepfather case (25 already in → next export offers only the 5).
 - "Export everything (30)" is always offered, but the delta is shown **first** so the default path can't silently re-push the 25 as duplicates.
-- Re-export never deletes prior export records; it appends a new `SUBMISSION`. History is the audit trail. `idempotency_key` (§13.8) still guards against a double-click writing the same hand-off twice.
+- Re-export never deletes prior export records; it appends a new `SUBMISSION` and marks the prior PMS export `status = superseded` (a later export re-exported over it) — the superseded record stays as history, never deleted. History is the audit trail. `idempotency_key` (§13.8) still guards against a double-click writing the same hand-off twice.
 
 ---
 
@@ -80,7 +80,7 @@ Both records live at the level of the thing asserted: completeness-override on `
 
 ## 8.5.6 Entity deltas (what the build commits add)
 
-- **`LIST_VERSION`**: `completeness_status` (`awaiting_completion | complete | complete_by_override`, computed except for override); `completeness_override` json nullable `{ actor, ts, pending_at_override, reason }`; `export_coverage` (`none | partial | full`, computed); `reconciliation` json computed `{ expected, named, pending, overage }`.
+- **`LIST_VERSION`**: `completeness_status` (`awaiting_completion | complete | complete_by_override`, computed except for override) — this **renames the draft's `alloggiati_coverage`** (§8.2), it is not an additional field; `completeness_override` json nullable `{ actor, ts, pending_at_override, reason }`; `export_coverage` (`none | partial | full`, computed); `reconciliation` json computed `{ expected, named, pending, overage }` — this **replaces the draft's `coverage_detail`**. One field per axis (completeness, export); the draft's `alloggiati_coverage`/`coverage_detail` pair is superseded, never carried alongside these.
 - **`STAY`**: already has `pax_expected`, `status`. `status` enum gains/keeps `names_pending | complete | over`. No new room-resolution fields in v1 (slot-binding deferred).
 - **`SUBMISSION`**: `target` (`alloggiati | pms`); `status` widened so `pms` uses `generated | export_confirmed | superseded`; `export_confirm` json nullable `{ actor, ts, guest_count }`.
 - **`SUBMISSION_RESULT`**: `outcome` gains `exported_unverified` for `target = pms`.
@@ -98,6 +98,8 @@ Held capacity behaves oppositely on the two adapters, and both must be honoured:
 ---
 
 ## 8.5.8 v1 builds vs stubs
+
+**This section supersedes draft §8.4's stub list for the incomplete-list / export scope:** supplement accumulation (`relation_to_prior = supplement`, §8.5.3) and PMS-target `SUBMISSION_RESULT` (`exported_unverified`, §8.5.4), which §8.4 deferred, are **build-now** here. §8.4's other defers stand unchanged — the Alloggiati partial/reject `SUBMISSION_RESULT` path and `person_key` cross-version diff remain stubbed.
 
 - **Build now:** the two-axis state (§8.5.1); held-capacity reconciliation with mismatch (§8.5.2); supplement as `relation_to_prior = supplement` with list-level UI selection and counter-based decrement (§8.5.3); PMS export as `SUBMISSION(target = pms)` with `generated → export_confirmed`, `exported_unverified` results, delta-first non-destructive re-export (§8.5.4); both audited assertions with red gates (§8.5.5).
 - **Stub / defer:** slot-level supplement binding (room-resolution inside a held block) — deferred to the per-`STAY` counter, revisit on real hotelier need; live PMS API confirmation (we will never have a verified outcome without it, by design); `person_key` cross-version diff stays as in §8.4.
