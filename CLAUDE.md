@@ -26,13 +26,15 @@ final file, never picks a code-table code, never talks to the portal.
 - **A row is not a guest.** Twin rows carry two people; counts are PAX-aware.
 - **Nothing vanishes unreviewably.** Junk rows emit-and-flag (`skip_flag`);
   held "N pax" rows become `names_pending` Stays carrying the source cell
-  text verbatim (addendum §8.5.7).
+  text verbatim; rows the map cannot see AT ALL become `unrecognized` Stays
+  that BLOCK completeness until a human looks (addendum §8.5.7).
 
 ## File map
 - `tracciato.py` — 168-char Alloggiati formatter + `Guest`. Golden-file tested.
 - `validate.py` — the red-issue gate (`is_submittable`).
-- `parser.py` — generalized stage-2 transcriber (map-driven; four-way row
-  dispatch: guests / held Stays / emit-and-flag / blank).
+- `parser.py` — generalized stage-2 transcriber (map-driven; five-way row
+  dispatch: guests / held Stays / emit-and-flag / `unrecognized` residue /
+  true blank).
 - `stay.py` — `Stay` entity, deterministic held-capacity recognizer,
   `reconcile()` + `completeness_status()` (addendum §8.5.2).
 - `maps.py` — file readers (`.docx` tables, `.xlsx` with merged-cell fill-down, `.txt` strict-TSV email paste) + hand-written `ColumnMap`s for the 4 sample lists. Data path = `./data/` (relative).
@@ -69,11 +71,16 @@ final file, never picks a code-table code, never talks to the portal.
   implements a 120-year cap. Decide which is right; align doc or code.
 - Held-capacity edge (see comment in `stay.py`): a cell mixing a full name
   with a count classifies as held; room-type-column mapping is the fix.
-- **Text-mail trailer gap (next commit, on a branch):** the `+ 2 autisti`
-  trailer VANISHES today — its only cell sits outside the map's name slots
-  (dispatch reads the row as blank) AND `held_pax` only speaks "pax". Pinned
-  in `test_textmail.py::test_trailer_known_gap`; the held-recognition
-  generalisation must flip those assertions (held Stay, pax_expected=2).
+- **Stage-1 `held_row` hint (the deliberate contract unfreeze):** map-authored
+  held classification, same trust model as `skip_row` — a HINT producing
+  review-visible held stays, never silent ones. Ships as one commit: stage-1
+  prompt + ALL fixtures + a hand-authored `llm_maps/textmail.json`. The
+  dispatch floor stays the guarantee underneath.
+- **Polish "Driver N" rows:** decide whether guard-red placeholder guests
+  should become held pax-1 stays (polish currently reads complete-with-reds:
+  the completeness axis says done while 2 drivers are unnamed; the red gate is
+  what blocks it today). Moves polish counts across four suites — needs its
+  own blast radius.
 
 ## SAFETY — this code handles passport data
 - **Never commit real guest data or `soglia.db`.** `.gitignore` blocks them. Only anonymized samples in `data/` belong in git. Real lists go in `real-data/` (gitignored).

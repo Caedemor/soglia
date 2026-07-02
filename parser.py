@@ -7,9 +7,11 @@ STAGE 2 transcription (follow the map, build Guests) -> here.   [THIS FILE]
 Grown to handle the variety in three real lists:
   - one OR two (or more) people per row, via name_slots;
   - a combined "SURNAME Firstname" cell OR separate surname/first-name columns;
-  - blank rows skipped automatically; held "<N> pax" placeholder rows become
-    names_pending Stays (stay.py) BEFORE any map skip rule applies; a map may
-    also supply a skip_row hint (emit-and-flag, never drop);
+  - truly blank rows yield nothing; held placeholder rows become
+    names_pending Stays (stay.py) BEFORE any map skip rule applies; rows with
+    content the map cannot see AT ALL become `unrecognized` Stays that block
+    completeness (the floor — PLAN-dispatch-floor.md); a map may also supply
+    a skip_row hint (emit-and-flag, never drop);
   - field cleaning is format-only (e.g. 05.12.1984 -> 05/12/1984), never meaning.
 Anything not mapped is left empty so the validator surfaces it. What stage 2
 CANNOT do (e.g. recognise that "GUIDE NOWAK" hides a role marker) is left for
@@ -116,17 +118,27 @@ CANON_FIELDS = ("sesso", "data_nascita", "comune_nascita", "provincia_nascita",
 def _transcribe_row(row: list, cmap: ColumnMap, *, stay_id, source_row):
     """One raw row -> (guests, stay_or_None), per the map.
 
-    Dispatch, in order (the four dispositions):
-      1. no filled name slot        -> ([], None)          genuine blank
-      2. EVERY filled slot is a pax-count placeholder
+    Dispatch, in order (the five dispositions):
+      1. every cell empty           -> ([], None)          true blank
+      2. no filled name slot, some cell filled -> RESIDUE (the floor):
+         a. held vocabulary with a count ("+ 2 autisti")
+                                    -> ([], held Stay)     pax_expected = text-N
+            (no slot structure, so the text's count IS the count — unlike 3);
+         b. anything else           -> ([], `unrecognized` Stay, pax 0)
+            content the map cannot see NEVER silently vanishes: verbatim + row
+            are kept and the stay BLOCKS completeness until a human looks
+            (§8.5.7). A vocabulary miss costs a glance, never a false
+            "complete".
+      3. EVERY filled slot is a pax-count placeholder
                                     -> ([], held Stay)     held capacity (§13.4):
          deterministic recognition, takes precedence over any map-authored skip
-         rule; pax_expected = the row's name-slot capacity (see stay.py); the
+         rule; pax_expected = the row's name-slot capacity (see stay.py) —
+         the in-slot text-N is advisory only (park restates BLOCK totals); the
          placeholder text rides VERBATIM on the stay so nothing vanishes
          unreviewably (§8.5.7). A MIXED row (real name + placeholder slot) is
          NOT held — it falls through to guests and the name-plausibility guard
          reds the placeholder slot: ambiguity goes to a human, never arithmetic.
-      3. otherwise                  -> (guests, named Stay) one Stay per row;
+      4. otherwise                  -> (guests, named Stay) one Stay per row;
          a park-style twin = one Stay + two Guests linked by stay_id. A map's
          skip_row stays a REVIEW HINT, not a delete: a matched row that still
          carries a name is emitted with `skip_flag` set, so a real guest the
@@ -138,7 +150,21 @@ def _transcribe_row(row: list, cmap: ColumnMap, *, stay_id, source_row):
     filled = [(s, n) for s, n in (slot.extract(row) for slot in cmap.name_slots)
               if s or n]
     if not filled:
-        return [], None                               # genuine blank -> nothing
+        residue = [c.strip() for c in row if c.strip()]
+        if not residue:
+            return [], None                           # true blank -> nothing
+        text = " | ".join(residue)
+        n = held_pax(text)
+        if n is not None:
+            # residue-held: no slot structure, so the text's N IS the count
+            return [], Stay(stay_id=stay_id, pax_expected=n,
+                            status="names_pending", verbatim=text,
+                            source_row=source_row)
+        # the floor: content the map cannot see becomes an unrecognized stay —
+        # never dropped, blocks completeness until a human looks (§8.5.7)
+        return [], Stay(stay_id=stay_id, pax_expected=0,
+                        status="unrecognized", verbatim=text,
+                        source_row=source_row)
 
     # held capacity — recognized in code, before (and regardless of) skip rules
     if all(held_pax(f"{s} {n}".strip()) is not None for s, n in filled):
@@ -180,8 +206,8 @@ def _transcribe_row(row: list, cmap: ColumnMap, *, stay_id, source_row):
 def transcribe_row(row: list, cmap: ColumnMap) -> list:
     """One raw row -> a list of canonical Guests (0, 1, or more), per the map.
 
-    Guests-only view of _transcribe_row: a held row yields NO guests here (and
-    its Stay is not visible) — use transcribe_with_stays or transcribe_report
+    Guests-only view of _transcribe_row: a held or unrecognized row yields NO
+    guests here (and its Stay is not visible) — use transcribe_with_stays or transcribe_report
     for the stays-aware account. Guests from this standalone view carry
     stay_id=None (there is no transcription-wide stay sequence to join)."""
     guests, _stay = _transcribe_row(row, cmap, stay_id=None, source_row=None)
@@ -196,9 +222,9 @@ class TranscribeResult:
 
 
 def transcribe_with_stays(rows: list, cmap: ColumnMap) -> TranscribeResult:
-    """Whole table -> TranscribeResult. One Stay per guest-yielding or held
-    row; guests link to their row's Stay via stay_id. Header rows and genuine
-    blanks yield nothing."""
+    """Whole table -> TranscribeResult. One Stay per guest-yielding, held, or
+    unrecognized row; guests link to their row's Stay via stay_id. Header rows
+    and truly blank rows yield nothing."""
     guests, stays = [], []
     next_id = 1
     for idx, row in enumerate(rows):
@@ -214,8 +240,8 @@ def transcribe_with_stays(rows: list, cmap: ColumnMap) -> TranscribeResult:
 
 def transcribe(rows: list, cmap: ColumnMap) -> list:
     """Whole table -> flat list of Guests (the stays-unaware view). Rows that
-    matched the skip rule are emitted WITH skip_flag set; held rows become
-    Stays (see transcribe_with_stays) and yield no guests."""
+    matched the skip rule are emitted WITH skip_flag set; held and unrecognized
+    rows become Stays (see transcribe_with_stays) and yield no guests."""
     return transcribe_with_stays(rows, cmap).guests
 
 
@@ -229,8 +255,9 @@ class TranscriptionReport:
     guests: int
     skip_flagged: int
     skip_desc: str
-    held_stays: int = 0     # rows recognized as held capacity (§13.4)
-    held_pax: int = 0       # Σ pax_expected across held stays
+    held_stays: int = 0        # rows recognized as held capacity (§13.4)
+    held_pax: int = 0          # Σ pax_expected across held stays
+    unrecognized_rows: int = 0 # rows the map cannot see (the floor) — kept as stays
 
     def summary(self) -> str:
         s = (f"input {self.input_rows} rows ({self.data_rows} data after "
@@ -241,14 +268,19 @@ class TranscriptionReport:
         if self.held_stays:
             s += (f"; {self.held_stays} held row(s) -> held capacity, "
                   f"{self.held_pax} pax pending (kept as stays, NOT dropped)")
+        if self.unrecognized_rows:
+            s += (f"; {self.unrecognized_rows} row(s) the map cannot see -> "
+                  f"unrecognized stays (kept verbatim, block completeness)")
         return s
 
 
 def transcribe_report(rows: list, cmap: ColumnMap) -> TranscriptionReport:
-    """transcribe(), plus an explicit account of skip-flagged and held rows.
-    Nothing is dropped: guests + held stays + genuine-blanks == data rows."""
+    """transcribe(), plus an explicit account of skip-flagged, held, and
+    unrecognized rows. Nothing with content is dropped: guest-yielding rows +
+    held + unrecognized + true blanks == data rows."""
     res = transcribe_with_stays(rows, cmap)
     held = [s for s in res.stays if s.status == "names_pending"]
+    unrec = [s for s in res.stays if s.status == "unrecognized"]
     guests = res.guests
     return TranscriptionReport(
         input_rows=len(rows),
@@ -259,4 +291,5 @@ def transcribe_report(rows: list, cmap: ColumnMap) -> TranscriptionReport:
         skip_desc=cmap.skip_desc,
         held_stays=len(held),
         held_pax=sum(s.pax_expected for s in held),
+        unrecognized_rows=len(unrec),
     )

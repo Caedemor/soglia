@@ -28,7 +28,7 @@ You should see **ALL GREEN (11/11)**. (On Windows without bash, run instead:
 All four real sample lists parse through the one engine: Ukrainian .docx = 39
 guests, Polish .xlsx = 48 (+7 legend rows emitted-and-flagged for review),
 Italian .xlsx = 23 (+9 held rooms tracked as names_pending stays), text-mail
-TSV paste = 47.
+TSV paste = 47 (+1 held trailer: 2 drivers pending).
 
 ## The one honest caveat
 The "AI" half of the product — stage 1, where a live model reads a messy document
@@ -43,7 +43,7 @@ work. The deterministic engine around it is solid; the live extraction is unprov
    (If you also created a GitHub account: add *"...then create a private GitHub repo and push it."*)
 3. Confirm 11/11 green. Now you have a versioned, backed-up baseline — the thing
    that makes the rot above impossible to repeat.
-4. Then the real first task — running stage 1 against a live model on the three
+4. Then the real first task — running stage 1 against a live model on the four
    sample lists and comparing its column maps to the hand-written ones in
    `maps.py`. That tells you whether the AI boundary actually works before you
    build anything on top of it.

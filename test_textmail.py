@@ -8,15 +8,15 @@ TSV, no header, 47 named lines (No. / surname / first name / DOB / doc number)
 plus one tab-less trailer "+ 2 autisti" (2 unnamed drivers). Dev list only;
 holdout sealed.
 
-Also pins, EXPLICITLY, the current (known-gap) disposition of the trailer —
-see test_trailer_known_gap. Do not "fix" that here; the held-recognition
-generalisation is the next commit.
+Also proves the dispatch floor end-to-end on the trailer —
+test_trailer_is_held is the commit-1.5 FLIP of the previously pinned known
+gap (the pin working as designed: the fix was forced through the assertions).
 """
 import os
 
 from maps import read_text_rows, parse_textmail, TEXTMAIL_TXT, TEXTMAIL_MAP
-from parser import transcribe_with_stays
-from stay import held_pax
+from parser import transcribe_report, transcribe_with_stays
+from stay import held_pax, reconcile, completeness_status
 
 TMP = "/tmp/soglia_test_textmail.txt"
 
@@ -70,36 +70,46 @@ def test_textmail_guests():
     print("PASS 47 named guests; verbatim honorific; missing doc number -> empty, not dropped")
 
 
-# --- the trailer: KNOWN GAP, pinned deliberately ------------------------------
-def test_trailer_known_gap():
-    """KNOWN GAP (do not 'fix' here — held-recognition generalisation is the
-    next commit, on a branch): the '+ 2 autisti' trailer is HELD capacity
-    (2 unnamed drivers), but today it yields NOTHING — no guest, no stay, no
-    red. Two independent misses compound:
-      1. its only cell sits in column 0, OUTSIDE the map's name slots, so the
-         four-way dispatch reads the row as a genuine blank (it never even
-         reaches the guard as a pseudo-guest);
-      2. even if it did reach the recognizer, held_pax() speaks only 'pax' —
-         '2 autisti' is a count in a vocabulary it doesn't know.
-    The next commit must reclassify it as a held Stay with pax_expected=2 and
-    the cell text verbatim (§8.5.7: nothing vanishes unreviewably). When it
-    does, THESE ASSERTIONS MUST FLIP — that is the point of pinning them."""
+# --- the trailer: held capacity via the residue path --------------------------
+def test_trailer_is_held():
+    """The commit-1.5 FLIP of the pinned gap: the '+ 2 autisti' trailer is a
+    held Stay via the RESIDUE path — no slot structure, so the text's N is
+    AUTHORITATIVE (pax_expected=2; slot capacity would wrongly say 1). Before
+    the dispatch floor this row vanished entirely and the list read a FALSE
+    "complete" (47/47/0); the transition is asserted below, explicitly."""
     rows = read_text_rows(TEXTMAIL_TXT)
     res = transcribe_with_stays(rows, TEXTMAIL_MAP)
 
-    assert held_pax("+ 2 autisti") is None            # miss 2: vocabulary
+    assert held_pax("+ 2 autisti") == 2               # vocabulary now spoken
     assert len(res.guests) == 47 and not any(
         "autisti" in (g.cognome + g.nome) for g in res.guests), \
-        "trailer must not leak into guests as long as the gap stands"
+        "trailer must never leak into guests"
     held = [s for s in res.stays if s.status == "names_pending"]
-    assert held == [], "trailer is NOT yet a held stay (that is the gap)"
-    assert len(res.stays) == 47, "one named stay per guest line, none for the trailer"
-    print("PASS (known gap pinned) trailer '+ 2 autisti' currently vanishes: "
-          "no guest, no stay, no red — next commit turns it into held pax_expected=2")
+    assert len(held) == 1, "the trailer is exactly one held stay"
+    t = held[0]
+    assert (t.pax_expected, t.verbatim, t.source_row) == (2, "+ 2 autisti", 47)
+    assert len(res.stays) == 48, "47 named stays + the held trailer"
+    assert not [s for s in res.stays if s.status == "unrecognized"]
+    assert all(g.stay_id != t.stay_id for g in res.guests), \
+        "no guest may sit on the held trailer"
+
+    # the false-complete is dead: 47/47/0 "complete" -> 49/47/2 awaiting
+    rec = reconcile(res.stays, res.guests)
+    assert rec == {"expected": 49, "named": 47, "pending": 2,
+                   "overage": 0, "unrecognized": 0}, rec
+    assert completeness_status(rec) == "awaiting_completion", \
+        "two unnamed drivers must keep the list from reading complete"
+
+    rep = transcribe_report(rows, TEXTMAIL_MAP)
+    assert (rep.guests, rep.held_stays, rep.held_pax,
+            rep.unrecognized_rows) == (47, 1, 2, 0)
+    assert "held capacity" in rep.summary()
+    print("PASS trailer '+ 2 autisti' -> held stay pax 2 (residue path, text-N "
+          "authoritative); false complete 47/47/0 -> 49/47/2 awaiting_completion")
 
 
 if __name__ == "__main__":
     test_reader_contract()
     test_textmail_guests()
-    test_trailer_known_gap()
+    test_trailer_is_held()
     print("ALL GREEN")
