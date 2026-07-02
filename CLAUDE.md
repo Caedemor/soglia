@@ -7,9 +7,9 @@ downstream, human review in the middle. Pure Python, plain-`assert` tests.
 
 ## How to run the tests (do this before and after any change)
 ```
-./run_tests.sh        # builds the golden file, runs all 10 suites, prints ALL GREEN (10/10)
+./run_tests.sh        # builds the golden file, runs all 11 suites, prints ALL GREEN (11/11)
 ```
-Never edit a `.py` and assume it works — run this. All 10 must stay green.
+Never edit a `.py` and assume it works — run this. All 11 must stay green.
 
 ## The one architectural rule, never break it
 The LLM touches data exactly once, at the boundary (messy doc → a `ColumnMap`).
@@ -35,18 +35,18 @@ final file, never picks a code-table code, never talks to the portal.
   dispatch: guests / held Stays / emit-and-flag / blank).
 - `stay.py` — `Stay` entity, deterministic held-capacity recognizer,
   `reconcile()` + `completeness_status()` (addendum §8.5.2).
-- `maps.py` — file readers (`.docx` tables, `.xlsx` with merged-cell fill-down) + hand-written `ColumnMap`s for the 3 sample lists. Data path = `./data/` (relative).
+- `maps.py` — file readers (`.docx` tables, `.xlsx` with merged-cell fill-down, `.txt` strict-TSV email paste) + hand-written `ColumnMap`s for the 4 sample lists. Data path = `./data/` (relative).
 - `llm_parser.py` + `llm_maps/*.json` — stage-1 plug + replay fixtures.
 - `orchestrator.py` — `process_list(parser, stays=…) → ListResult` (reds,
   suggestions, reconciliation, completeness via stays, tracciato).
 - `infer.py` — decoupled advisory inference.
 - `storage.py` — SQLite persistence (`connect` → `init_db` →
   `save_list`/`load_list`; stays: `save_list(..., stays=)` / `load_stays`).
-- `data/` — three ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23).
+- `data/` — four ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23, text-mail TSV 47).
 - `soglia-demo.jsx` — standalone React UI mockup (not yet wired to anything).
 
 ## Current state (verified)
-- Deterministic engine + SQLite: **built, 10/10 tests green.**
+- Deterministic engine + SQLite: **built, 11/11 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
 - **Never validated live:** the stage-1 LLM call has only ever run against saved fixtures (`replay_caller`). The `ColumnMap`s in `maps.py` are hand-written stand-ins. Running stage 1 against a live model on real documents — and building the ~20-list eval set — is the key open empirical task.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
@@ -69,6 +69,11 @@ final file, never picks a code-table code, never talks to the portal.
   implements a 120-year cap. Decide which is right; align doc or code.
 - Held-capacity edge (see comment in `stay.py`): a cell mixing a full name
   with a count classifies as held; room-type-column mapping is the fix.
+- **Text-mail trailer gap (next commit, on a branch):** the `+ 2 autisti`
+  trailer VANISHES today — its only cell sits outside the map's name slots
+  (dispatch reads the row as blank) AND `held_pax` only speaks "pax". Pinned
+  in `test_textmail.py::test_trailer_known_gap`; the held-recognition
+  generalisation must flip those assertions (held Stay, pax_expected=2).
 
 ## SAFETY — this code handles passport data
 - **Never commit real guest data or `soglia.db`.** `.gitignore` blocks them. Only anonymized samples in `data/` belong in git. Real lists go in `real-data/` (gitignored).

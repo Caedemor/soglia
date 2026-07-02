@@ -19,6 +19,7 @@ UP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data") + os.sep
 MIX18_DOCX = UP + "MIX18_rooming-list_-_12_06-14_06-_Park_Hotel_Salice_Terme__002__ANON.docx"
 PARK_XLSX  = UP + "Copia_di_PARK_HOTEL_SALICE_TERME_040626_agg_rooming_18may_ANON.xlsx"
 POLISH_XLSX = UP + "Rooming_List__W\u0142ochy_po_\u0142__30_05__06_06_2026__1__ANON.xlsx"
+TEXTMAIL_TXT = UP + "text_mail_rooming_list_anonymized.txt"
 
 
 # ---- file readers ----------------------------------------------------------
@@ -47,6 +48,19 @@ def read_xlsx_rows(path, sheet=0):
             for c in range(rng.min_col, rng.max_col + 1):
                 grid[r - 1][c - 1] = val
     return [[_cell_str(v) for v in row] for row in grid]
+
+def read_text_rows(path):
+    """Plain text (email-body paste) -> rows of stripped strings. Strict TSV:
+    one line = one row, split on tabs — no column inference, no fixed-width
+    guessing. Hygiene is deliberately narrow: a leading BOM is stripped
+    (utf-8-sig), trailing blank lines are dropped; INTERIOR blank lines stay
+    as empty rows (they can be structural). A tab-less line becomes a 1-cell
+    row and still reaches stage 2."""
+    with open(path, encoding="utf-8-sig") as f:
+        lines = f.read().splitlines()
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return [[c.strip() for c in line.split("\t")] for line in lines]
 
 
 # ---- MIX18 (Ukrainian docx): one combined name cell, has passports ---------
@@ -112,3 +126,22 @@ def parse_park_stays(path=PARK_XLSX):
     'Al.Mat' twin blocks as names_pending stays (the §13.4 reconciliation
     input). mix18/polish compose the same via transcribe_with_stays."""
     return transcribe_with_stays(read_xlsx_rows(path), PARK_MAP)
+
+
+# ---- Text-mail TSV (email-body paste): no header, one trailer line ---------
+# Cols: 0 running No., 1 surname, 2 first name, 3 DOB dd/mm/yyyy, 4 doc number.
+# Line 48 is a tab-less trailer "+ 2 autisti" (2 unnamed drivers) — a held row
+# in a vocabulary the recognizer doesn't speak yet; see test_textmail.py for
+# its (known-gap) current disposition.
+TEXTMAIL_MAP = ColumnMap(
+    header_rows=0,                                    # no header — line 1 is guest 1
+    name_slots=[NameSlot(surname_column=1, firstname_column=2)],
+    default_role="20",
+    fields={
+        "data_nascita":     FieldRule(column=3, normalizer="dotted_date"),
+        "numero_documento": FieldRule(column=4, normalizer="passthrough"),
+        "tipo_documento":   FieldRule(column=4, normalizer="doc_type_passport"),
+    },
+)
+def parse_textmail(path=TEXTMAIL_TXT):
+    return transcribe(read_text_rows(path), TEXTMAIL_MAP)

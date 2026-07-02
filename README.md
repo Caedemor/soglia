@@ -11,7 +11,7 @@ testable Python (stage 2 onward). The model never writes output files, never
 picks code-table codes, never talks to the portal.
 
 Status: deterministic engine + SQLite persistence + STAY / held-capacity
-reconciliation built and green (`./run_tests.sh` — 10 suites). The live
+reconciliation built and green (`./run_tests.sh` — 11 suites). The live
 stage-1 extraction and the app tiers (server, UI, wrapper) are not built yet.
 
 Start with [README_START_HERE.md](README_START_HERE.md) (first-time setup)
