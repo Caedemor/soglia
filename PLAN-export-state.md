@@ -115,3 +115,29 @@ byte-stable, zero assertion changes.
 
 Audit records + red gates (commit 4); supplements (commit 3); Alloggiati
 verdict ingestion + receipts; `person_key`; PMS-specific templates; any UI.
+
+## 6. Review outcome (user, pre-implementation)
+
+- **#4 amended:** the real Bedzzle import template has been requested from
+  the field (stepfather) and is incoming. Build proceeds NOW with the
+  canonical CSV; the builder seam is made explicit — `record_pms_export`
+  takes the artifact TEXT as an argument, so a Bedzzle-shaped builder lands
+  later (fixup if during review, adapter commit if after) with zero
+  machinery change. The template doubles as evidence for the queued
+  room-type-column follow-up.
+- **#5 confirmed** with the lens split stated: PMS export needs no override
+  ever in commit 2 (commit 4 adds a proceed-able warning); alloggiati keeps
+  today's per-row behavior (reds sit out of the tracciato; force-include
+  override is commit 4). Nothing hard-blocks (§13.7).
+- **Calls 1, 2, 3, 6, 7:** approved by silence.
+- **Two decisions surfaced during implementation design, added here:**
+  (a) the delta/coverage denominator is ALL persisted guests of the version,
+  including skip-flagged junk — excluding them silently would drop a
+  wrongly-skipped REAL guest from the hand-off (the §8.5.7 sin); junk in the
+  delta fails LOUD (visible row in the export) and review-resolution removes
+  it from the denominator naturally when that lands. Pinned in tests.
+  (b) confirming a SUPERSEDED submission is REFUSED with a clear error — a
+  newer file exists; confirming a stale artifact would record a belief about
+  bytes the human probably didn't import. Pinned in tests.
+
+STATUS: approved — implementation follows in the next commit.

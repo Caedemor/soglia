@@ -7,9 +7,9 @@ downstream, human review in the middle. Pure Python, plain-`assert` tests.
 
 ## How to run the tests (do this before and after any change)
 ```
-./run_tests.sh        # builds the golden file, runs all 11 suites, prints ALL GREEN (11/11)
+./run_tests.sh        # builds the golden file, runs all 12 suites, prints ALL GREEN (12/12)
 ```
-Never edit a `.py` and assume it works — run this. All 11 must stay green.
+Never edit a `.py` and assume it works — run this. All 12 must stay green.
 
 ## The one architectural rule, never break it
 The LLM touches data exactly once, at the boundary (messy doc → a `ColumnMap`).
@@ -43,24 +43,34 @@ final file, never picks a code-table code, never talks to the portal.
   suggestions, reconciliation, completeness via stays, tracciato).
 - `infer.py` — decoupled advisory inference.
 - `storage.py` — SQLite persistence (`connect` → `init_db` →
-  `save_list`/`load_list`; stays: `save_list(..., stays=)` / `load_stays`).
+  `save_list`/`load_list`; stays: `save_list(..., stays=)` / `load_stays`) +
+  the export-state workflow (§8.5.4): `record_pms_export` → `confirm_export`,
+  `pms_delta`, `export_coverage`, `record_alloggiati_submission`.
+- `export.py` — PMS artifact (canonical CSV, injectable builder — Bedzzle
+  template incoming lands as another builder) + `Submission`/`SubmissionResult`.
 - `data/` — four ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23, text-mail TSV 47).
 - `soglia-demo.jsx` — standalone React UI mockup (not yet wired to anything).
 
 ## Current state (verified)
-- Deterministic engine + SQLite: **built, 11/11 tests green.**
+- Deterministic engine + SQLite: **built, 12/12 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
 - **Never validated live:** the stage-1 LLM call has only ever run against saved fixtures (`replay_caller`). The `ColumnMap`s in `maps.py` are hand-written stand-ins. Running stage 1 against a live model on real documents — and building the ~20-list eval set — is the key open empirical task.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
   truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):
-  build commit **1 of 4 (§8.5.8) is in code** — the `STAY` foundation
+  build commits **1 and 2 of 4 (§8.5.8) are in code** — the `STAY` foundation
   (identity/stay split, twin = one `STAY` + two `GUEST`s, held capacity +
   reconciliation). Park reconciles 41 expected / 23 named / 18 pending →
   `awaiting_completion`; design rationale (esp. held `pax_expected` = name-slot
   capacity, NOT the placeholder text-N) is in [PLAN-stay-foundation.md](PLAN-stay-foundation.md).
-  Remaining per §8.5.8: (2) export-state tracking + delta export, (3) supplement
-  accumulation + mismatch-tolerant reconciliation, (4) override + audit with
-  red gates. The addendum stays authoritative for those.
+  Commit 2 adds `SUBMISSION(target=pms)` with `generated → export_confirmed
+  (→ superseded)`, manifest-then-outcomes results, delta-first non-destructive
+  re-export, `export_coverage` (the second §8.5.1 axis — orthogonality to
+  completeness is pinned in test_export), and minimal alloggiati recording
+  with §13.2's submit-time arrival stamp; design + the seven calls in
+  [PLAN-export-state.md](PLAN-export-state.md). Remaining per §8.5.8:
+  (3) supplement accumulation + mismatch-tolerant reconciliation,
+  (4) override + audit (mark-complete, export-confirm json) with red gates.
+  The addendum stays authoritative for those.
 
 ## Known open items (small, deliberately deferred)
 - `parser.py` `norm_dotted_date`: a 2-digit year becomes "20YY" — wrong for

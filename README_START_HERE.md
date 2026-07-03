@@ -22,7 +22,7 @@ Run this in the folder:
 ```
 ./run_tests.sh
 ```
-You should see **ALL GREEN (11/11)**. (On Windows without bash, run instead:
+You should see **ALL GREEN (12/12)**. (On Windows without bash, run instead:
 `python build_golden.py` then `python test_tracciato.py`, etc.)
 
 All four real sample lists parse through the one engine: Ukrainian .docx = 39
@@ -41,7 +41,7 @@ work. The deterministic engine around it is solid; the live extraction is unprov
 2. First message:
    *"Initialize a git repository here, make the first commit, then run ./run_tests.sh and show me the result."*
    (If you also created a GitHub account: add *"...then create a private GitHub repo and push it."*)
-3. Confirm 11/11 green. Now you have a versioned, backed-up baseline — the thing
+3. Confirm 12/12 green. Now you have a versioned, backed-up baseline — the thing
    that makes the rot above impossible to repeat.
 4. Then the real first task — running stage 1 against a live model on the four
    sample lists and comparing its column maps to the hand-written ones in
