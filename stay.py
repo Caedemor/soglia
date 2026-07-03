@@ -28,9 +28,12 @@ from dataclasses import dataclass
 
 # "<N> pax|autisti" as whole tokens, case-insensitive: catches "Al.Mat. arrivi
 # 18 pax", "2 pax", "+ 2 autisti", "1 autista"; does NOT catch "Driver 1" or
-# "2 drivers" — "driver" is deliberately OUT: "Driver 2" is an INDEX, not a
-# count (two such rows are two people at pax 1 each, not one row at pax 2).
-# It also does not catch "PAXTON" (word boundary),
+# "2 drivers". "driver" stays OUT of the vocabulary — not because of index
+# forms (the digit-first pattern cannot match word-first "Driver 2" at all,
+# so misreading was never possible) but because growing the vocabulary
+# without dev-data evidence is the enumeration trap: an unspoken "2 drivers"
+# trailer lands unrecognized, blocks completeness, and costs a glance (the
+# floor). It also does not catch "PAXTON" (word boundary),
 # "SGL" / "No. of rooms" (no count), or "names pending" (no count — a held
 # stay with unknowable pax must not feed arithmetic that could read as
 # complete, so count-less placeholders stay guard-red guests instead).

@@ -91,6 +91,13 @@ final file, never picks a code-table code, never talks to the portal.
   the completeness axis says done while 2 drivers are unnamed; the red gate is
   what blocks it today). Moves polish counts across four suites — needs its
   own blast radius.
+- Commit-4 UX note (commit-2 review finding): regenerating byte-identical
+  inputs AFTER an intervening export returns the old, superseded
+  submission id, whose confirm is refused ('a newer file exists') — loud,
+  safe, never corrupting. Commit 4's confirm flow should surface
+  'generate a fresh export' as the escape; the principled fix is scoping
+  the §13.9 dedupe to the non-superseded submission (a key collision with
+  a superseded record mints a new submission).
 
 ## SAFETY — this code handles passport data
 - **Never commit real guest data or `soglia.db`.** `.gitignore` blocks them. Only anonymized samples in `data/` belong in git. Real lists go in `real-data/` (gitignored).
