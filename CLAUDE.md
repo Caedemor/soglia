@@ -35,8 +35,8 @@ final file, never picks a code-table code, never talks to the portal.
 - `parser.py` — generalized stage-2 transcriber (map-driven; five-way row
   dispatch: guests / held Stays / emit-and-flag / `unrecognized` residue /
   true blank).
-- `stay.py` — `Stay` entity, deterministic held-capacity recognizer,
-  `reconcile()` + `completeness_status()` (override-aware, §8.5.1/§8.5.2) +
+- `stay.py` — `Stay` entity, deterministic held-capacity recognizer
+  (`held_pax`), `reconcile()` + `completeness_status()` (override-aware, §8.5.1/§8.5.2) +
   `derive_status()` (the supplement counter rule).
 - `maps.py` — file readers (`.docx` tables, `.xlsx` with merged-cell fill-down, `.txt` strict-TSV email paste) + hand-written `ColumnMap`s for the 4 sample lists. Data path = `./data/` (relative).
 - `llm_parser.py` + `llm_maps/*.json` — stage-1 plug + replay fixtures.
@@ -52,7 +52,9 @@ final file, never picks a code-table code, never talks to the portal.
 - `export.py` — PMS artifact (canonical CSV, injectable builder — Bedzzle
   template incoming lands as another builder) + `Submission`/`SubmissionResult`.
 - `data/` — four ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23, text-mail TSV 47).
-- `soglia-demo.jsx` — standalone React UI mockup (not yet wired to anything).
+- `soglia-demo.jsx` — standalone React UI mockup (not wired to anything;
+  predates the STAY/export engine — visual inspiration for the review-UI
+  cycle, not a spec).
 
 ## Current state (verified)
 - Deterministic engine + SQLite: **built, 14/14 tests green.**

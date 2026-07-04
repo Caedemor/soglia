@@ -49,7 +49,7 @@ class GuestResult:
 class ListResult:
     """The single object the pipeline hands back for a whole list."""
     guests: list            # list[GuestResult]
-    stays: list = field(default_factory=list)   # list[Stay] — named + held (§13.4)
+    stays: list = field(default_factory=list)   # list[Stay] — named/held/unrecognized (+ over via supplements)
 
     @property
     def total(self):
@@ -72,7 +72,7 @@ class ListResult:
 
     def completeness(self) -> dict:
         """§8.5.2 + §8.5.1: PAX-aware reconciliation and the completeness axis.
-        {expected, named, pending, overage, status}. Guests without a stay link
+        {expected, named, pending, overage, unrecognized, status}. Guests without a stay link
         (legacy parsers) count 1-for-1; a held room keeps status at
         awaiting_completion until its people are named. Orthogonal to
         reconciliation() (submittability), per the addendum's two axes."""

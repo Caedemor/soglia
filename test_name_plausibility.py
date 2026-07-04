@@ -9,7 +9,7 @@ Both directions matter equally:
       stays, never guests. The guard remains the BACKSTOP: a placeholder that
       escapes held recognition (e.g. count-less "names pending") is still
       emitted as a guest and RED-flagged, non-submittable;
-  (b) NOT ONE real PERSONAL NAME across the three dev samples is falsely
+  (b) NOT ONE real PERSONAL NAME across the four dev samples is falsely
       flagged. The guard must not cry wolf on real names — Cyrillic, Polish
       diacritics, compound given names, the honorific "Ks. KOWALCZYK", or the
       role marker "GUIDE NOWAK" are all valid and must pass.
@@ -25,7 +25,7 @@ import dataclasses
 
 from validate import _implausible_name, validate_guest, is_submittable
 from parser import transcribe, transcribe_with_stays, ColumnMap, NameSlot
-from maps import (parse_mix18, parse_polish, parse_park,
+from maps import (parse_mix18, parse_polish, parse_textmail, parse_park,
                   read_xlsx_rows, PARK_XLSX, PARK_MAP)
 
 
@@ -108,7 +108,8 @@ def test_polish_driver_placeholders_flagged():
 
 # --- (b) categorical: real personal names clean, placeholders caught, no in-between ---
 def test_no_false_positives_on_real_names():
-    everyone = list(_park_no_skip().guests) + list(parse_mix18()) + list(parse_polish())
+    everyone = (list(_park_no_skip().guests) + list(parse_mix18())
+                + list(parse_polish()) + list(parse_textmail()))
     real_names, false_pos, missed = 0, [], []
     for g in everyone:
         flagged = bool(_name_reds(g))
@@ -124,7 +125,7 @@ def test_no_false_positives_on_real_names():
     # Al.Mat rows are held stays now and never reach the guest list at all)
     assert not missed, f"placeholders the guard missed: {missed}"
     print(f"PASS zero false positives across {real_names} real personal names "
-          f"(mix18 + polish + park), all placeholders caught")
+          f"(mix18 + polish + park + textmail), all placeholders caught")
 
 
 if __name__ == "__main__":

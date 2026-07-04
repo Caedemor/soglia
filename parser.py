@@ -4,7 +4,7 @@ Soglia — generalized stage-2 parser (map-driven transcription).
 STAGE 1 understanding (which column is which) -> a ColumnMap.   [LLM, later]
 STAGE 2 transcription (follow the map, build Guests) -> here.   [THIS FILE]
 
-Grown to handle the variety in three real lists:
+Grown to handle the variety in four real lists:
   - one OR two (or more) people per row, via name_slots;
   - a combined "SURNAME Firstname" cell OR separate surname/first-name columns;
   - truly blank rows yield nothing; held placeholder rows become
@@ -102,7 +102,7 @@ class ColumnMap:
     fields: dict = field(default_factory=dict)            # canonical field -> FieldRule
     role_rule: Optional[Callable[[list], str]] = None     # row -> tipo_alloggiato code
     default_role: str = "20"                              # membro gruppo
-    skip_row: Optional[Callable[[list], bool]] = None     # e.g. held "names pending" rows
+    skip_row: Optional[Callable[[list], bool]] = None     # e.g. header/legend rows (emit-and-flag)
     skip_desc: str = ""                                   # human-readable skip rule, for the review flag
 
 
@@ -211,8 +211,8 @@ def transcribe_row(row: list, cmap: ColumnMap) -> list:
     """One raw row -> a list of canonical Guests (0, 1, or more), per the map.
 
     Guests-only view of _transcribe_row: a held or unrecognized row yields NO
-    guests here (and its Stay is not visible) — use transcribe_with_stays or transcribe_report
-    for the stays-aware account. Guests from this standalone view carry
+    guests here (and its Stay is not visible) — use transcribe_with_stays or
+    transcribe_report for the stays-aware account. Guests from this standalone view carry
     stay_id=None (there is no transcription-wide stay sequence to join)."""
     guests, _stay = _transcribe_row(row, cmap, stay_id=None, source_row=None)
     return guests
@@ -222,7 +222,7 @@ def transcribe_row(row: list, cmap: ColumnMap) -> list:
 class TranscribeResult:
     """Stage 2's full output: the people AND the room-shaped units they occupy."""
     guests: list        # list[Guest]
-    stays: list         # list[Stay] — named (complete) + held (names_pending)
+    stays: list         # list[Stay] — named (complete) + held (names_pending) + unrecognized
 
 
 def transcribe_with_stays(rows: list, cmap: ColumnMap) -> TranscribeResult:

@@ -1,8 +1,9 @@
 """
 Soglia — the STAY entity (rooms / held capacity) + reconciliation (§8.5.2).
 
-Build commit 1 of addendum §8.5.8. Identity stays on Guest; a Stay is the
-room-shaped unit a row describes — one Stay per guest-yielding or held row.
+Born in build commit 1 of addendum §8.5.8, grown through 1.5–4. Identity
+stays on Guest; a Stay is the room-shaped unit a row describes — one Stay per
+guest-yielding, held, or unrecognized row.
 Held-capacity recognition is DETERMINISTIC code, never model/map-authored:
 a held row must be caught even when stage 1's sample window never saw one,
 and it takes precedence over any map-authored skip rule.
@@ -10,8 +11,8 @@ and it takes precedence over any map-authored skip rule.
 pax_expected derivation (v1, deliberate — see PLAN-stay-foundation.md §1):
   - a NAMED row's stay expects exactly its filled name slots (a park twin = 2);
   - a HELD row IN the name slots expects the row's name-slot capacity
-    (len(map.name_slots)) — NOT the number in the placeholder text. The source restates the BLOCK
-    total on every room row ("Al.Mat. arrivi 18 pax" x8 + "...17 pax" x1),
+    (len(map.name_slots)) — NOT the number in the placeholder text. The
+    source restates the BLOCK total on every room row ("Al.Mat. arrivi 18 pax" x8 + "...17 pax" x1),
     so summing text-N gives 161; slot capacity gives 9 x 2 = 18, matching
     handoff §13.4's arithmetic (41 expected / 23 named / 18 pending). The
     text is kept VERBATIM on the stay (§8.5.7: nothing vanishes unreviewably).
@@ -37,9 +38,7 @@ from dataclasses import dataclass
 # "SGL" / "No. of rooms" (no count), or "names pending" (no count — a held
 # stay with unknowable pax must not feed arithmetic that could read as
 # complete, so count-less placeholders stay guard-red guests instead).
-# Growing this vocabulary is NOT the safety story: residue text it doesn't
-# speak lands as an `unrecognized` stay that blocks completeness (the floor,
-# parser.py). Documented sharp edge: a residue totals row containing held
+# Documented sharp edge: a residue totals row containing held
 # vocabulary ("47 pax totale") reads held-47 — loudly wrong (pending 47),
 # never silently complete; no denylist (that's the enumeration trap).
 # Known bounded edge (review finding): a single cell mixing a full personal
@@ -70,7 +69,7 @@ class Stay:
     follow-up rather than sitting here dead."""
     stay_id: int                 # per-transcription id; Guest.stay_id joins here
     pax_expected: int
-    status: str                  # "names_pending" | "complete" | "unrecognized" ("over": later)
+    status: str                  # names_pending | complete | over | unrecognized
     verbatim: str = ""           # held rows: the source cell text, for review
     source_row: int = None       # 0-based row index in the source table (provenance)
 

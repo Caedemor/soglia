@@ -1,7 +1,7 @@
 # Soglia
 
 Rooming-list normalizer for Italian hotels: a messy guest-list document goes
-in (docx/xlsx, any layout), a PMS-importable file and an Alloggiati Web
+in (docx / xlsx / plain-text paste, any layout), a PMS-importable file and an Alloggiati Web
 (police-portal) schedine file come out — with a human review step in the
 middle and nothing invented by software.
 
@@ -21,6 +21,6 @@ Current-state record: docs/handoff-rev5.md (dated postscript for commit 4).
 
 Start with [README_START_HERE.md](README_START_HERE.md) (first-time setup)
 and [CLAUDE.md](CLAUDE.md) (working state + invariants). Design records live
-in [docs/](docs/); the addendum is authoritative for the incomplete-list
-build. This code handles passport data: never commit real guest lists or
+in [docs/](docs/); the addendum was the authoritative spec for the (now
+complete) engine build and remains the reference for its semantics. This code handles passport data: never commit real guest lists or
 `soglia.db` — only the anonymized samples belong in `data/`.

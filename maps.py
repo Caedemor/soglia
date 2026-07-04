@@ -129,7 +129,7 @@ def parse_park(path=PARK_XLSX):
 
 def parse_park_stays(path=PARK_XLSX):
     """The stays-aware view: 23 named guests on their stays + the 9 held
-    'Al.Mat' twin blocks as names_pending stays (the §13.4 reconciliation
+    'Al.Mat' twin rooms as names_pending stays (the §13.4 reconciliation
     input). mix18/polish compose the same via transcribe_with_stays."""
     return transcribe_with_stays(read_xlsx_rows(path), PARK_MAP)
 
