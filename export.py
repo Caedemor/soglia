@@ -38,7 +38,7 @@ class Submission:
     submitted_arrival_date: str   # §13.2: stamped at submission time ("" for pms)
     artifact_hash: str            # sha256 of the exact bytes handed over
     submitted_at: str             # ISO timestamp
-    export_confirm: str = ""      # §8.5.5 audit json {actor, ts, guest_count} — commit 4 fills
+    export_confirm: str = ""      # §8.5.5 audit json {actor, ts, guest_count}, written at confirm
     id: int = None                # storage PK (None until persisted)
 
 

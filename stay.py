@@ -117,13 +117,15 @@ def derive_status(pax_expected: int, named: int) -> str:
     return "complete" if named == pax_expected else "names_pending"
 
 
-def completeness_status(reconciliation: dict) -> str:
+def completeness_status(reconciliation: dict, *, override: bool = False) -> str:
     """§8.5.1 completeness axis. Overage is advisory and NON-blocking. An
     UNRECOGNIZED row blocks `complete` exactly like pending pax — a row the
     map cannot see must cost a human a glance, never a silent false-complete
-    (the floor). The override state (complete_by_override) arrives with the
-    audit commit (4)."""
-    return ("complete"
-            if reconciliation["pending"] == 0
-            and reconciliation.get("unrecognized", 0) == 0
-            else "awaiting_completion")
+    (the floor). With override=True (§8.5.5): computed truth beats the label
+    — a genuinely complete list reports `complete` (the override json remains
+    as history); `complete_by_override` only while actually
+    incomplete-but-vouched."""
+    if (reconciliation["pending"] == 0
+            and reconciliation.get("unrecognized", 0) == 0):
+        return "complete"
+    return "complete_by_override" if override else "awaiting_completion"

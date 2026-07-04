@@ -113,7 +113,7 @@ def test_confirm_and_refusals():
     c, vid = _fresh(res.guests, res.stays)
     ids = [gid for gid, _ in load_guests_with_ids(c, vid)]
     sid = record_pms_export(c, vid, ids, build_pms_csv(res.guests, res.stays))
-    confirm_export(c, sid)
+    confirm_export(c, sid, actor="wardo")
 
     assert all(r.outcome == "exported_unverified" for r in load_results(c, sid))
     assert export_coverage(c, vid) == "full" and pms_delta(c, vid) == []
@@ -122,18 +122,18 @@ def test_confirm_and_refusals():
     # confirming twice, or confirming a superseded draft, is refused
     for bad in (sid,):
         try:
-            confirm_export(c, bad)
+            confirm_export(c, bad, actor="wardo")
             assert False, "re-confirm must be refused"
         except ValueError:
             pass
     sid_a = record_pms_export(c, vid, ids[:3], "A")
     sid_b = record_pms_export(c, vid, ids[:4], "B")     # supersedes sid_a
     try:
-        confirm_export(c, sid_a)
+        confirm_export(c, sid_a, actor="wardo")
         assert False, "confirming a SUPERSEDED submission must be refused"
     except ValueError:
         pass
-    confirm_export(c, sid_b)                            # the newest confirms fine
+    confirm_export(c, sid_b, actor="wardo")                            # the newest confirms fine
     c.close()
     print("PASS confirm: outcomes written, coverage full, delta empty; "
           "re-confirm and stale-confirm refused")
@@ -148,7 +148,7 @@ def test_stepfather_and_orthogonality():
 
     sid = record_pms_export(c, vid, first42,
                             build_pms_csv([g for _, g in pairs[:42]], res.stays))
-    confirm_export(c, sid)
+    confirm_export(c, sid, actor="wardo")
     assert export_coverage(c, vid) == "partial"
     delta = pms_delta(c, vid)
     assert [gid for gid, _ in delta] == [gid for gid, _ in pairs[42:]], \
@@ -156,7 +156,7 @@ def test_stepfather_and_orthogonality():
 
     sid2 = record_pms_export(c, vid, [gid for gid, _ in delta],
                              build_pms_csv([g for _, g in delta], res.stays))
-    confirm_export(c, sid2)
+    confirm_export(c, sid2, actor="wardo")
     # the first export is now superseded — its 42 must STAY covered
     assert load_submissions(c, vid)[0].status == "superseded"
     assert export_coverage(c, vid) == "full", \
@@ -227,7 +227,7 @@ def test_legacy_migration_and_roundtrip():
                     stays=res.stays)
     ids = [gid for gid, _ in load_guests_with_ids(c, vid)]
     sid = record_pms_export(c, vid, ids, build_pms_csv(res.guests, res.stays))
-    confirm_export(c, sid)
+    confirm_export(c, sid, actor="wardo")
     assert export_coverage(c, vid) == "full"
     sub = load_submissions(c, vid)[0]
     assert (sub.id, sub.list_version_id) == (sid, vid), \

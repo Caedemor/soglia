@@ -70,7 +70,8 @@ def test_flagship_monday_to_wednesday():
     # MONDAY: export everything named, confirm. Commit 2's flagship state:
     ids = [gid for gid, _ in load_guests_with_ids(c, v1)]
     confirm_export(c, record_pms_export(c, v1, ids,
-                                        build_pms_csv(res.guests, res.stays)))
+                                        build_pms_csv(res.guests, res.stays)),
+                   actor="wardo")
     _, _, rec1 = _state(c, v1)
     assert export_coverage(c, v1) == "full"
     assert completeness_status(rec1) == "awaiting_completion" and rec1["pending"] == 2
@@ -96,7 +97,8 @@ def test_flagship_monday_to_wednesday():
 
     # WEDNESDAY: export the delta, confirm -> both axes at their endpoints
     confirm_export(c, record_pms_export(c, v2, [gid for gid, _ in delta],
-                                        build_pms_csv([g for _, g in delta], s2)))
+                                        build_pms_csv([g for _, g in delta], s2)),
+                   actor="wardo")
     assert export_coverage(c, v2) == "full" and pms_delta(c, v2) == []
     c.close()
     print("PASS FLAGSHIP: Mon full/awaiting -> Tue supplement -> complete, "
@@ -112,7 +114,8 @@ def test_stepfather_numbers():
     c, v1 = _fresh(v1res.guests, v1res.stays)
     ids = [gid for gid, _ in load_guests_with_ids(c, v1)]
     confirm_export(c, record_pms_export(c, v1, ids,
-                                        build_pms_csv(v1res.guests, v1res.stays)))
+                                        build_pms_csv(v1res.guests, v1res.stays)),
+                   actor="wardo")
 
     v2 = apply_supplement(c, v1, _supp([f"LATE{i}" for i in range(5)]),
                           source_filename="supp.txt")
@@ -185,7 +188,8 @@ def test_chain_of_two_supplements():
     c, v1 = _fresh(res.guests, res.stays)
     ids = [gid for gid, _ in load_guests_with_ids(c, v1)]
     confirm_export(c, record_pms_export(c, v1, ids,
-                                        build_pms_csv(res.guests, res.stays)))
+                                        build_pms_csv(res.guests, res.stays)),
+                   actor="wardo")
 
     v2 = apply_supplement(c, v1, _supp([f"S{i}" for i in range(10)]),
                           source_filename="s1")
@@ -278,7 +282,7 @@ def test_relation_and_legacy_migration():
     vid = save_list(c, res.guests, hotel="x", source_filename="x",
                     stays=res.stays)
     ids = [gid for gid, _ in load_guests_with_ids(c, vid)]
-    confirm_export(c, record_pms_export(c, vid, ids, "artifact"))
+    confirm_export(c, record_pms_export(c, vid, ids, "artifact"), actor="wardo")
     v2 = apply_supplement(c, vid, _supp(["S0", "S1"]), source_filename="s")
     assert len(pms_delta(c, v2)) == 2 and export_coverage(c, v2) == "partial"
     c.close()

@@ -21,7 +21,9 @@ import datetime
 import sqlite3
 
 from export import Submission, SubmissionResult
-from stay import Stay, derive_status
+import json
+
+from stay import Stay, derive_status, reconcile, completeness_status
 from tracciato import Guest
 
 SCHEMA = """
@@ -135,6 +137,10 @@ def init_db(conn):
         # §13.4 / §8.5.3: initial | correction | supplement ('' = pre-3 rows)
         conn.execute("ALTER TABLE list_version ADD COLUMN "
                      "relation_to_prior TEXT DEFAULT ''")
+    if "completeness_override" not in lv_cols:
+        # §8.5.5: the mark-complete assertion json (empty = never overridden)
+        conn.execute("ALTER TABLE list_version ADD COLUMN "
+                     "completeness_override TEXT DEFAULT ''")
     conn.commit()
 
 
@@ -254,12 +260,23 @@ def record_pms_export(conn, list_version_id, guest_ids, artifact_text):
     pms export `superseded` (doc-literal); results already written keep their
     force — superseded means no-longer-the-newest, never invalidated."""
     ids = sorted(set(guest_ids))
-    key = _sha256(f"{list_version_id}|pms|{','.join(map(str, ids))}|"
-                  f"{_sha256(artifact_text)}")
-    row = conn.execute("SELECT id FROM submission WHERE idempotency_key = ?",
-                       (key,)).fetchone()
-    if row:
-        return row[0]                       # double-click: same hand-off, once
+    base = _sha256(f"{list_version_id}|pms|{','.join(map(str, ids))}|"
+                   f"{_sha256(artifact_text)}")
+    # §13.9's guard is for DOUBLE-CLICKS: a collision with a LIVE submission
+    # returns it. A collision with a SUPERSEDED one is a regeneration after an
+    # intervening export (commit-2 review finding) — a new intent that happens
+    # to produce old bytes — so a fresh submission is minted under a suffixed
+    # key: the regeneration lineage stays auditable in the key itself.
+    key, n = base, 1
+    while True:
+        row = conn.execute("SELECT id, status FROM submission "
+                           "WHERE idempotency_key = ?", (key,)).fetchone()
+        if row is None:
+            break                           # free key -> record under it
+        if row[1] != "superseded":
+            return row[0]                   # true double-click: once
+        n += 1
+        key = f"{base}|r{n}"
 
     conn.execute("UPDATE submission SET status = 'superseded' "
                  "WHERE list_version_id = ? AND target = 'pms' "
@@ -276,13 +293,16 @@ def record_pms_export(conn, list_version_id, guest_ids, artifact_text):
     return sid
 
 
-def confirm_export(conn, submission_id):
+def confirm_export(conn, submission_id, *, actor):
     """generated -> export_confirmed: the human asserts "the file imported."
     Upgrades this submission's manifest to outcome=exported_unverified — the
-    write that flips guests to exported (coverage reads outcomes only).
+    write that flips guests to exported (coverage reads outcomes only) — and
+    records the §8.5.5 assertion {actor, ts, guest_count}: a belief that can
+    be wrong, so we log WHOSE belief and WHEN (the honest ceiling without a
+    PMS API). `actor` is required: an unattributed audit record is hollow.
     REFUSED for a superseded submission: a newer file exists, and confirming
     stale bytes would record a belief about a file the human probably didn't
-    import (plan §6). The §8.5.5 audit json lands in commit 4."""
+    import."""
     row = conn.execute("SELECT target, status FROM submission WHERE id = ?",
                        (submission_id,)).fetchone()
     if row is None:
@@ -293,8 +313,13 @@ def confirm_export(conn, submission_id):
                          f"'generated', got target={target!r} status={status!r}")
     conn.execute("UPDATE submission_result SET outcome = 'exported_unverified' "
                  "WHERE submission_id = ?", (submission_id,))
-    conn.execute("UPDATE submission SET status = 'export_confirmed' "
-                 "WHERE id = ?", (submission_id,))
+    guest_count = conn.execute(
+        "SELECT COUNT(*) FROM submission_result WHERE submission_id = ?",
+        (submission_id,)).fetchone()[0]
+    record = json.dumps({"actor": actor, "ts": _now(),
+                         "guest_count": guest_count}, sort_keys=True)
+    conn.execute("UPDATE submission SET status = 'export_confirmed', "
+                 "export_confirm = ? WHERE id = ?", (record, submission_id))
     conn.commit()
 
 
@@ -477,3 +502,52 @@ def apply_supplement(conn, prior_version_id, supplement, *, source_filename):
 
     conn.commit()
     return new_vid
+
+
+# --- the two audited human assertions (addendum §8.5.5; commit 4) ---------------
+
+def mark_complete_override(conn, list_version_id, *, actor, reason):
+    """§8.5.5: "machine flagged X, human took responsibility on this date" —
+    the §13.7 philosophy above field level. Writes {actor, ts,
+    pending_at_override, unrecognized_at_override, reason} onto the version
+    (sorted-key json; unrecognized_at_override extends the spec'd shape —
+    the dispatch floor postdates §8.5.5, and vouching past an unrecognized
+    row must say so). REFUSED when there is nothing to vouch for (the
+    version is genuinely complete) or when it is already vouched (the first
+    record stands; a supplement makes a NEW version — new facts, new
+    responsibility). Returns the record dict. The record — not the UI
+    warning in front of it — is the point."""
+    row = conn.execute("SELECT completeness_override FROM list_version "
+                       "WHERE id = ?", (list_version_id,)).fetchone()
+    if row is None:
+        raise ValueError(f"no list_version {list_version_id}")
+    if row[0]:
+        raise ValueError("already complete_by_override — the first record "
+                         "stands (a supplement creates a NEW version to assert)")
+    rec = reconcile(load_stays(conn, list_version_id),
+                    load_list(conn, list_version_id))
+    if completeness_status(rec) == "complete":
+        raise ValueError("version is genuinely complete — nothing to override")
+    record = {"actor": actor, "ts": _now(),
+              "pending_at_override": rec["pending"],
+              "unrecognized_at_override": rec["unrecognized"],
+              "reason": reason}
+    conn.execute("UPDATE list_version SET completeness_override = ? "
+                 "WHERE id = ?",
+                 (json.dumps(record, sort_keys=True), list_version_id))
+    conn.commit()
+    return record
+
+
+def version_completeness(conn, list_version_id):
+    """The persisted-side twin of orchestrator.ListResult.completeness():
+    §8.5.2 reconciliation + the §8.5.1 status INCLUDING complete_by_override,
+    read off the stored version. This is what a UI calls."""
+    row = conn.execute("SELECT completeness_override FROM list_version "
+                       "WHERE id = ?", (list_version_id,)).fetchone()
+    if row is None:
+        raise ValueError(f"no list_version {list_version_id}")
+    rec = reconcile(load_stays(conn, list_version_id),
+                    load_list(conn, list_version_id))
+    rec["status"] = completeness_status(rec, override=bool(row[0]))
+    return rec
