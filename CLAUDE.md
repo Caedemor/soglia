@@ -46,7 +46,8 @@ final file, never picks a code-table code, never talks to the portal.
   `save_list`/`load_list`; stays: `save_list(..., stays=)` / `load_stays`) +
   the export-state workflow (§8.5.4): `record_pms_export` → `confirm_export`,
   `pms_delta`, `export_coverage`, `record_alloggiati_submission` — and the
-  supplement workflow (§8.5.3): `apply_supplement` + `guest_lineage`.
+  supplement workflow (§8.5.3): `apply_supplement` + `guest_lineage`; and
+  the §8.5.5 assertions: `mark_complete_override` / `version_completeness`.
 - `export.py` — PMS artifact (canonical CSV, injectable builder — Bedzzle
   template incoming lands as another builder) + `Submission`/`SubmissionResult`.
 - `data/` — four ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23, text-mail TSV 47).
@@ -64,7 +65,8 @@ final file, never picks a code-table code, never talks to the portal.
   [docs/handoff-rev5.md](docs/handoff-rev5.md) §2.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
   truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):
-  build commits **1, 2 and 3 of 4 (§8.5.8) are in code** — the `STAY` foundation
+  **all four §8.5.8 build commits are in code — the ENGINE IS COMPLETE.**
+  Commit 1: the `STAY` foundation
   (identity/stay split, twin = one `STAY` + two `GUEST`s, held capacity +
   reconciliation). Park reconciles 41 expected / 23 named / 18 pending →
   `awaiting_completion`; design rationale (esp. held `pax_expected` = name-slot
@@ -81,10 +83,17 @@ final file, never picks a code-table code, never talks to the portal.
   the held pool merged into ONE coarse block stay, names attached by
   counter, mismatch tolerated ('over' reachable); the Monday→Wednesday
   story is pinned end-to-end in test_supplements. Design:
-  [PLAN-supplements.md](PLAN-supplements.md). Remaining per §8.5.8:
-  (4) override + audit (mark-complete, export-confirm json) with red gates.
-  The addendum stays authoritative. Full current-state record:
-  [docs/handoff-rev5.md](docs/handoff-rev5.md).
+  [PLAN-supplements.md](PLAN-supplements.md). Commit 4 adds the two §8.5.5
+  audited assertions: `mark_complete_override` (per-version json record —
+  `complete_by_override`; a supplement resets the assertion) and
+  `confirm_export(…, actor=)` recording `{actor, ts, guest_count}`; the
+  regeneration corner is fixed (§13.9 dedupe scoped to non-superseded,
+  suffixed keys). Red gates are UI confirmations over facts the engine
+  already exposes; per-field `origin=override` waits for `field_meta` + the
+  review UI. Design: [PLAN-audit-override.md](PLAN-audit-override.md).
+  **Next: the app tiers** (upload shell, review UI + edit loop, exports).
+  Full current-state record: [docs/handoff-rev5.md](docs/handoff-rev5.md)
+  (dated postscript covers commit 4).
 
 ## Known open items (small, deliberately deferred)
 - Held-capacity edge (see comment in `stay.py`): a cell mixing a full name
@@ -99,13 +108,6 @@ final file, never picks a code-table code, never talks to the portal.
   the completeness axis says done while 2 drivers are unnamed; the red gate is
   what blocks it today). Moves polish counts across four suites — needs its
   own blast radius.
-- Commit-4 UX note (commit-2 review finding): regenerating byte-identical
-  inputs AFTER an intervening export returns the old, superseded
-  submission id, whose confirm is refused ('a newer file exists') — loud,
-  safe, never corrupting. Commit 4's confirm flow should surface
-  'generate a fresh export' as the escape; the principled fix is scoping
-  the §13.9 dedupe to the non-superseded submission (a key collision with
-  a superseded record mints a new submission).
 
 ## SAFETY — this code handles passport data
 - **Never commit real guest data or `soglia.db`.** `.gitignore` blocks them. Only anonymized samples in `data/` belong in git. Real lists go in `real-data/` (gitignored).

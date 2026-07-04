@@ -104,3 +104,21 @@ upload shell, the review surface (`GuestResult` is already UI-shaped), the
 edit loop (needs its own design cycle — edits-as-corrected-version,
 provenance), export buttons on the commit-2/3 machinery. The engine stays
 the product; the UI stays thin.
+
+---
+
+## 6. Postscript — commit 4 landed (July 4, 2026, same day)
+
+§5's "what remains" is done: the two §8.5.5 assertions are in code and the
+**§8.5.8 engine plan is COMPLETE** (14 suites green). `mark_complete_override`
+records `{actor, ts, pending_at_override, unrecognized_at_override, reason}`
+on the version — per-version on purpose: a supplement creates new facts and
+resets the assertion, while the old version keeps its record.
+`confirm_export` now REQUIRES `actor` and records `{actor, ts, guest_count}`
+— whose belief, and when. The commit-2 regeneration corner is fixed by
+scoping the §13.9 dedupe to non-superseded submissions (suffixed keys,
+`…|r2`); true double-clicks still dedupe. Computed truth beats the label: a
+genuinely complete list reports `complete`, the json remaining as history.
+Per-field `origin=override` deliberately waits for `field_meta` + the review
+UI. Design: `PLAN-audit-override.md`. Everything after this point in the
+repo's history is app tier.
