@@ -1,13 +1,13 @@
 """
-All THREE real lists through the SAME engine — proof the generalization holds,
+All FOUR real lists through the SAME engine — proof the generalization holds,
 and an honest readout of what each list does and doesn't carry.
     python3 run_lists.py
 """
 from collections import Counter
 
-from maps import (parse_mix18, parse_polish, parse_park,
-                  read_docx_rows, read_xlsx_rows,
-                  MIX18_DOCX, POLISH_XLSX, PARK_XLSX)
+from maps import (parse_mix18, parse_polish, parse_park, parse_textmail,
+                  read_docx_rows, read_xlsx_rows, read_text_rows,
+                  MIX18_DOCX, POLISH_XLSX, PARK_XLSX, TEXTMAIL_TXT)
 from orchestrator import process_list
 from validate import validate_guest
 
@@ -43,12 +43,15 @@ def main():
                   read_xlsx_rows(POLISH_XLSX), parse_polish)
     c = summarize("PARK HOTEL — xlsx (TWO people per row; names only; held rows → stays)",
                   read_xlsx_rows(PARK_XLSX), parse_park)
+    d = summarize("TEXT-MAIL — strict-TSV email paste (no header; held trailer '+ 2 autisti')",
+                  read_text_rows(TEXTMAIL_TXT), parse_textmail)
 
-    print(f"\n{'='*72}\nThree very different real lists, one engine: {a} + {b} + {c} guests parsed.")
+    print(f"\n{'='*72}\nFour very different real lists, one engine: "
+          f"{a} + {b} + {c} + {d} guests parsed.")
     print("Stage-2 handled: combined/separate names, 2-per-row, blank + held rows, merged")
-    print("cells, Excel date/number types. Left for stage 1 / review: embedded name markers")
-    print("(\"GUIDE NOWAK\", \"Ks. ...\"), proper role/party assignment, and the missing")
-    print("identity fields each list simply doesn't carry.")
+    print("cells, Excel date/number types, email-body TSV. Left for stage 1 / review:")
+    print("embedded name markers (\"GUIDE NOWAK\", \"Ks. ...\"), proper role/party")
+    print("assignment, and the missing identity fields each list simply doesn't carry.")
 
 
 if __name__ == "__main__":

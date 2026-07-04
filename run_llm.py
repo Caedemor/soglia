@@ -1,5 +1,6 @@
 """
-The full pipeline with stage 1 in front, on all three real lists:
+The full pipeline with stage 1 in front, on the three lists that have replay
+fixtures (the text-mail list's fixture is an open item — CLAUDE.md):
     python3 run_llm.py
 
   raw file --[stage 1: model -> ColumnMap]--> [stage 2: transcribe] --> orchestrator

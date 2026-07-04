@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS submission (
     submitted_arrival_date TEXT,               -- §13.2: stamped at submission
     artifact_hash          TEXT,               -- sha256 of the handed-over bytes
     submitted_at           TEXT,
-    export_confirm         TEXT DEFAULT ''     -- §8.5.5 audit json — commit 4 fills
+    export_confirm         TEXT DEFAULT ''     -- §8.5.5 audit json, written at confirm
 );
 CREATE TABLE IF NOT EXISTS submission_result (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS stay (
     list_version_id  INTEGER REFERENCES list_version(id),
     stay_id          INTEGER,                  -- per-list id guests reference
     pax_expected     INTEGER,
-    status           TEXT,                     -- names_pending | complete
+    status           TEXT,                     -- names_pending | complete | over | unrecognized
     verbatim         TEXT,                     -- held rows: source cell text
     source_row       INTEGER                   -- 0-based row in the source table
 );
@@ -142,10 +142,6 @@ def init_db(conn):
         conn.execute("ALTER TABLE list_version ADD COLUMN "
                      "completeness_override TEXT DEFAULT ''")
     conn.commit()
-
-
-def _now():
-    return datetime.datetime.now().isoformat(timespec="seconds")
 
 
 def save_list(conn, guests, *, hotel, source_filename, stays=None):
@@ -223,8 +219,8 @@ def _sha256(text):
 
 
 def _now():
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    # UTC, ISO — the one timestamp everything stored here uses
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
 def load_guests_with_ids(conn, list_version_id):

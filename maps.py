@@ -1,8 +1,9 @@
 """
 Hand-written ColumnMaps for the four real lists — stand-ins for what the LLM
 (stage 1) will eventually emit. The generalized transcriber (stage 2) consumes
-them unchanged. Also the file readers: docx tables and xlsx sheets -> rows of
-strings (xlsx un-merges merged cells and formats dates/numbers).
+them unchanged. Also the file readers: docx tables, xlsx sheets, and strict-TSV
+text (email-body paste) -> rows of strings (xlsx un-merges merged cells and
+formats dates/numbers).
 """
 import datetime
 import os
