@@ -45,7 +45,8 @@ final file, never picks a code-table code, never talks to the portal.
 - `storage.py` — SQLite persistence (`connect` → `init_db` →
   `save_list`/`load_list`; stays: `save_list(..., stays=)` / `load_stays`) +
   the export-state workflow (§8.5.4): `record_pms_export` → `confirm_export`,
-  `pms_delta`, `export_coverage`, `record_alloggiati_submission`.
+  `pms_delta`, `export_coverage`, `record_alloggiati_submission` — and the
+  supplement workflow (§8.5.3): `apply_supplement` + `guest_lineage`.
 - `export.py` — PMS artifact (canonical CSV, injectable builder — Bedzzle
   template incoming lands as another builder) + `Submission`/`SubmissionResult`.
 - `data/` — four ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23, text-mail TSV 47).
@@ -57,7 +58,7 @@ final file, never picks a code-table code, never talks to the portal.
 - **Never validated live:** the stage-1 LLM call has only ever run against saved fixtures (`replay_caller`). The `ColumnMap`s in `maps.py` are hand-written stand-ins. Running stage 1 against a live model on real documents — and building the ~20-list eval set — is the key open empirical task.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
   truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):
-  build commits **1 and 2 of 4 (§8.5.8) are in code** — the `STAY` foundation
+  build commits **1, 2 and 3 of 4 (§8.5.8) are in code** — the `STAY` foundation
   (identity/stay split, twin = one `STAY` + two `GUEST`s, held capacity +
   reconciliation). Park reconciles 41 expected / 23 named / 18 pending →
   `awaiting_completion`; design rationale (esp. held `pax_expected` = name-slot
@@ -67,18 +68,19 @@ final file, never picks a code-table code, never talks to the portal.
   re-export, `export_coverage` (the second §8.5.1 axis — orthogonality to
   completeness is pinned in test_export), and minimal alloggiati recording
   with §13.2's submit-time arrival stamp; design + the seven calls in
-  [PLAN-export-state.md](PLAN-export-state.md). Remaining per §8.5.8:
-  (3) supplement accumulation + mismatch-tolerant reconciliation,
+  [PLAN-export-state.md](PLAN-export-state.md). Commit 3 adds
+  `apply_supplement` (§8.5.3): a supplement is a NEW version
+  (`relation_to_prior='supplement'`) — prior guests carried with
+  `guest_lineage` receipts (export facts survive the carry; NOT person_key),
+  the held pool merged into ONE coarse block stay, names attached by
+  counter, mismatch tolerated ('over' reachable); the Monday→Wednesday
+  story is pinned end-to-end in test_supplements. Design:
+  [PLAN-supplements.md](PLAN-supplements.md). Remaining per §8.5.8:
   (4) override + audit (mark-complete, export-confirm json) with red gates.
-  The addendum stays authoritative for those.
+  The addendum stays authoritative. Full current-state record:
+  [docs/handoff-rev5.md](docs/handoff-rev5.md).
 
 ## Known open items (small, deliberately deferred)
-- `parser.py` `norm_dotted_date`: a 2-digit year becomes "20YY" — wrong for
-  DOBs ("3.3.85" → 2085). Fix early next cycle; the validator's plausibility
-  red currently catches the worst of it.
-- `maps.py` `_mix18_role` reads `row[7]` unguarded — a short row would crash.
-- Handoff §7.4/§13 says birth-date plausibility "1920–2026"; `validate.py`
-  implements a 120-year cap. Decide which is right; align doc or code.
 - Held-capacity edge (see comment in `stay.py`): a cell mixing a full name
   with a count classifies as held; room-type-column mapping is the fix.
 - **Stage-1 `held_row` hint (the deliberate contract unfreeze):** map-authored
