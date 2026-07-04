@@ -29,7 +29,7 @@ design brief — awaiting approval, no implementation yet.
 1. **`actor` is REQUIRED on both assertions** — an unattributed audit record
    is hollow, and the record is the product. `confirm_export(conn, sid, *,
    actor)` is therefore a BREAKING signature change to commit 2's function;
-   every callsite (test_export ×6, test_supplements ×4) is updated in the
+   every callsite (test_export ×7, test_supplements ×5) is updated in the
    same commit and listed in §4. `mark_complete_override(conn, vid, *,
    actor, reason)` is born requiring both.
 2. **Override refusals + per-version semantics.** Overriding an
@@ -91,7 +91,7 @@ double-click still dedupes. Migration: a commit-3-era DB (no
 completeness_override column) upgrades in place.
 
 Touched existing assertions, old → new: `confirm_export(c, sid)` →
-`confirm_export(c, sid, actor="...")` at ten callsites across test_export
+`confirm_export(c, sid, actor="...")` at twelve callsites across test_export
 and test_supplements — signature only, zero behavioral assertions change.
 Everything else: byte-stable.
 
