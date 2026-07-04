@@ -55,7 +55,13 @@ final file, never picks a code-table code, never talks to the portal.
 ## Current state (verified)
 - Deterministic engine + SQLite: **built, 13/13 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
-- **Never validated live:** the stage-1 LLM call has only ever run against saved fixtures (`replay_caller`). The `ColumnMap`s in `maps.py` are hand-written stand-ins. Running stage 1 against a live model on real documents — and building the ~20-list eval set — is the key open empirical task.
+- **Stage 1 IS validated live** on the three fixture lists: `llm_maps/*` are
+  CAPTURED model output (including per-model variants), and `replay_caller`
+  keeps the suite hermetic and free. Still genuinely open: a textmail fixture
+  (bundled with the `held_row`-hint contract unfreeze), **the ~20-list eval
+  set** (the key empirical task), and the production model/provider choice —
+  the caller is the swappable data-residency plug. Full record:
+  [docs/handoff-rev5.md](docs/handoff-rev5.md) §2.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
   truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):
   build commits **1, 2 and 3 of 4 (§8.5.8) are in code** — the `STAY` foundation

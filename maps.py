@@ -1,5 +1,5 @@
 """
-Hand-written ColumnMaps for the three real lists — stand-ins for what the LLM
+Hand-written ColumnMaps for the four real lists — stand-ins for what the LLM
 (stage 1) will eventually emit. The generalized transcriber (stage 2) consumes
 them unchanged. Also the file readers: docx tables and xlsx sheets -> rows of
 strings (xlsx un-merges merged cells and formats dates/numbers).
@@ -64,6 +64,9 @@ def read_text_rows(path):
 
 
 # ---- MIX18 (Ukrainian docx): one combined name cell, has passports ---------
+# Review note: the UNMAPPED Check In/Out columns (2/3) carry 2-digit years
+# ("12.06.26"); if those columns are ever mapped (the STAY-dates follow-up),
+# the values land verbatim + RED by design — never century-expanded.
 
 def _mix18_role(row):
     # guarded: a short row (merged/truncated cells) gets the default role,
@@ -132,9 +135,9 @@ def parse_park_stays(path=PARK_XLSX):
 
 # ---- Text-mail TSV (email-body paste): no header, one trailer line ---------
 # Cols: 0 running No., 1 surname, 2 first name, 3 DOB dd/mm/yyyy, 4 doc number.
-# Line 48 is a tab-less trailer "+ 2 autisti" (2 unnamed drivers) — a held row
-# in a vocabulary the recognizer doesn't speak yet; see test_textmail.py for
-# its (known-gap) current disposition.
+# Line 48 is a tab-less trailer "+ 2 autisti" (2 unnamed drivers): a RESIDUE
+# row — no slot content — so the dispatch floor makes it a held Stay with
+# pax from the text's N (2). Pinned in test_textmail.py::test_trailer_is_held.
 TEXTMAIL_MAP = ColumnMap(
     header_rows=0,                                    # no header — line 1 is guest 1
     name_slots=[NameSlot(surname_column=1, firstname_column=2)],
