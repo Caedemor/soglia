@@ -59,10 +59,13 @@ final file, never picks a code-table code, never talks to the portal.
 ## Current state (verified)
 - Deterministic engine + SQLite: **built, 14/14 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
-- **Stage 1 IS validated live** on mix18/polish/park (checkpoint re-measure,
+- **Stage 1 IS validated live** on ALL FOUR dev lists (checkpoint re-measure +
+  same-day closing battery,
   2026-07-04: every live run's map reproduces the hand-map guests on mix18 and
   park — the dispatch floor absorbs park's missed held-row skip — and polish
-  differs only by one junk header row the live map correctly treats as header).
+  differs only by one junk header row the live map correctly treats as header;
+  textmail's FIRST live pass: all 47 guests, the out-of-window trailer caught
+  by the dispatch floor — rev5 §8).
   Fixture provenance, precisely: the TRACKED `llm_maps/*.json` are CURATED
   replay answers pinned byte-parity in test_llm_parser — NOT verbatim captures
   (park's fixture carries the Al.Mat skip no live run produced; live runs

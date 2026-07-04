@@ -149,3 +149,28 @@ Same checkpoint, elsewhere: the stale "never run live" caveat that survived
 in README_START_HERE was corrected; `run_lists.py` now exercises all four dev
 lists; a dead duplicate `_now()` in storage.py was removed (zero behavior
 change — the surviving UTC definition was already the one in effect).
+
+---
+
+## 8. Postscript — the closing live battery (July 4, 2026)
+
+The checkpoint closed with a full live engine test: eight stage-1 calls
+(claude-sonnet-4-6, two runs per list, ~cents total), each dev list then
+driven through the ENTIRE engine on its live map — transcribe, validate,
+persist, completeness, PMS artifact, export, confirm, coverage `full`.
+Zero real people missing anywhere; zero unrecognized rows; zero invalid
+maps. mix18 exact (39, 2/2). park EXACT (23 + 9 held / 18 pax, 2/2) — in
+June the missed Al.Mat skip made live map-parity 0/4; deterministic held
+recognition now makes the skip rule irrelevant. polish: all real guests;
+the live map reads the second header row as a header where the hand map
+emit-and-flags it (54 vs 55 persisted — one junk row, arguably the cleaner
+reading). textmail, FIRST-ever live pass: all 47 guests, both runs — and
+the "+ 2 autisti" trailer sits at line 48, OUTSIDE the 20-row prompt
+window, so no model-emitted map could ever handle it: the dispatch floor
+caught it anyway (held stay, pax 2, both runs). Commit 1's design premise
+— "a held row must be caught even when stage 1's sample window never saw
+one" — kept, live, on a never-seen format. Two field-level divergences
+(default_role 16 vs 20; doc_type_passport unmapped) degrade LOUD (role is
+a later audited step, §13.3; unmapped stays null and reds) and are the
+first two scoring dimensions for the ~20-list eval set. Captures: dated,
+gitignored `llm_maps/*.2026-07-04.live.json` (local, regenerable).
