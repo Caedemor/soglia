@@ -66,7 +66,9 @@ def read_text_rows(path):
 # ---- MIX18 (Ukrainian docx): one combined name cell, has passports ---------
 
 def _mix18_role(row):
-    return "18" if row[7].strip().upper() == "TOUR-LEADER" else "20"
+    # guarded: a short row (merged/truncated cells) gets the default role,
+    # never an IndexError — the guard/validator surface anything odd
+    return "18" if len(row) > 7 and row[7].strip().upper() == "TOUR-LEADER" else "20"
 
 MIX18_MAP = ColumnMap(
     header_rows=1,

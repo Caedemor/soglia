@@ -38,8 +38,12 @@ def norm_dotted_date(v: str) -> str:
             parts = [p for p in v.split(sep) if p != ""]
             if len(parts) == 3:
                 d, m, y = parts
-                if len(y) == 2:           # 2-digit year -> 20YY (rooming lists are near-future)
-                    y = "20" + y
+                if len(y) == 2:
+                    # A 2-digit year is AMBIGUOUS for a date of birth ("85"
+                    # is almost certainly 1985, "12" almost certainly 2012)
+                    # and this file NEVER invents: leave the value verbatim,
+                    # the validator reds the format, a human decides.
+                    return v
                 return f"{int(d):02d}/{int(m):02d}/{y}"
     return v   # leave anything unexpected untouched; validation will judge it
 
