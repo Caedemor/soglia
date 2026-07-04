@@ -32,9 +32,11 @@ TSV paste = 47 (+1 held trailer: 2 drivers pending).
 
 ## The one honest caveat
 The "AI" half of the product — stage 1, where a live model reads a messy document
-and produces the column map — has **only ever been tested against saved answers,
-never run live.** That is the real unknown and the most important next piece of
-work. The deterministic engine around it is solid; the live extraction is unproven.
+and produces the column map — HAS run live against the model on three of the four
+sample lists, and the deterministic layers proved they catch what it misses (the
+record: docs/handoff-rev5.md §2 and §7). The remaining unknown is **breadth**:
+four dev lists are not the ~20-list eval set, the text-mail list has never been
+through stage 1, and the production model/provider choice is deliberately open.
 
 ## What to do now, in Claude Code
 1. Open this folder in Claude Code (desktop app, Code tab — no terminal needed).
@@ -43,10 +45,10 @@ work. The deterministic engine around it is solid; the live extraction is unprov
    (If you also created a GitHub account: add *"...then create a private GitHub repo and push it."*)
 3. Confirm 14/14 green. Now you have a versioned, backed-up baseline — the thing
    that makes the rot above impossible to repeat.
-4. Then the real first task — running stage 1 against a live model on the four
-   sample lists and comparing its column maps to the hand-written ones in
-   `maps.py`. That tells you whether the AI boundary actually works before you
-   build anything on top of it.
+4. (Done — steps 1–3 and the first live-model comparison are history; the repo
+   is versioned, on GitHub, and the §8.5.8 engine is complete.) The real next
+   task is breadth: grow the eval set toward ~20 real lists and give the
+   text-mail list its stage-1 fixture.
 
-A full design record lives in your handoff document (rev. 4). This repo is the
-code that document describes — now runnable, tested, and safe to version.
+The current-state record is docs/handoff-rev5.md (rev. 4 is frozen history).
+This repo is the code those documents describe — runnable, tested, versioned.

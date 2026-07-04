@@ -122,3 +122,30 @@ genuinely complete list reports `complete`, the json remaining as history.
 Per-field `origin=override` deliberately waits for `field_meta` + the review
 UI. Design: `PLAN-audit-override.md`. Everything after this point in the
 repo's history is app tier.
+
+---
+
+## 7. Postscript — checkpoint corrections (July 4, 2026, full-tree review)
+
+A line-by-line review of the whole tree tightened two claims in this file:
+
+- **§2 overclaimed the fixtures' provenance.** The tracked `llm_maps/*.json`
+  are **curated replay answers** — model-shaped reference maps pinned to
+  byte-parity with the hand maps in `test_llm_parser` — **not verbatim
+  captures**: park's fixture carries the `Al.Mat` held-row skip that **no**
+  live run ever produced (all four live runs emitted `column_empty` instead),
+  and none of the three tracked fixtures byte-matches any captured run. The
+  raw live captures are local, regenerable, **gitignored** `*.live.json`
+  (per-model variants included) — on a fresh clone they are absent.
+- **The live-validation record, re-measured at this checkpoint** (guest-level
+  parity of every captured live run against the hand maps, under the current
+  dispatch): mix18 **4/4**, park **4/4** — the dispatch floor + held
+  recognition absorb the model's missed skip rule, which is the architecture
+  doing its job — and polish **4/4 on real guests** (each live run differs
+  only in one junk header row it correctly treats as header where the hand
+  map emit-and-flags it; 54 vs 55 emitted rows, zero real-person difference).
+
+Same checkpoint, elsewhere: the stale "never run live" caveat that survived
+in README_START_HERE was corrected; `run_lists.py` now exercises all four dev
+lists; a dead duplicate `_now()` in storage.py was removed (zero behavior
+change — the surviving UTC definition was already the one in effect).

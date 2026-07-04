@@ -36,7 +36,8 @@ final file, never picks a code-table code, never talks to the portal.
   dispatch: guests / held Stays / emit-and-flag / `unrecognized` residue /
   true blank).
 - `stay.py` — `Stay` entity, deterministic held-capacity recognizer,
-  `reconcile()` + `completeness_status()` (addendum §8.5.2).
+  `reconcile()` + `completeness_status()` (override-aware, §8.5.1/§8.5.2) +
+  `derive_status()` (the supplement counter rule).
 - `maps.py` — file readers (`.docx` tables, `.xlsx` with merged-cell fill-down, `.txt` strict-TSV email paste) + hand-written `ColumnMap`s for the 4 sample lists. Data path = `./data/` (relative).
 - `llm_parser.py` + `llm_maps/*.json` — stage-1 plug + replay fixtures.
 - `orchestrator.py` — `process_list(parser, stays=…) → ListResult` (reds,
@@ -56,13 +57,19 @@ final file, never picks a code-table code, never talks to the portal.
 ## Current state (verified)
 - Deterministic engine + SQLite: **built, 14/14 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
-- **Stage 1 IS validated live** on the three fixture lists: `llm_maps/*` are
-  CAPTURED model output (including per-model variants), and `replay_caller`
-  keeps the suite hermetic and free. Still genuinely open: a textmail fixture
-  (bundled with the `held_row`-hint contract unfreeze), **the ~20-list eval
-  set** (the key empirical task), and the production model/provider choice —
-  the caller is the swappable data-residency plug. Full record:
-  [docs/handoff-rev5.md](docs/handoff-rev5.md) §2.
+- **Stage 1 IS validated live** on mix18/polish/park (checkpoint re-measure,
+  2026-07-04: every live run's map reproduces the hand-map guests on mix18 and
+  park — the dispatch floor absorbs park's missed held-row skip — and polish
+  differs only by one junk header row the live map correctly treats as header).
+  Fixture provenance, precisely: the TRACKED `llm_maps/*.json` are CURATED
+  replay answers pinned byte-parity in test_llm_parser — NOT verbatim captures
+  (park's fixture carries the Al.Mat skip no live run produced; live runs
+  emitted `column_empty` instead). Raw live captures are LOCAL, regenerable,
+  gitignored `*.live.json`. Still genuinely open: a textmail fixture (bundled
+  with the `held_row`-hint contract unfreeze), **the ~20-list eval set** (the
+  key empirical task), and the production model/provider choice — the caller
+  is the swappable data-residency plug. Full record:
+  [docs/handoff-rev5.md](docs/handoff-rev5.md) §2 + §7.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
   truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):
   **all four §8.5.8 build commits are in code — the ENGINE IS COMPLETE.**
