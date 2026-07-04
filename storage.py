@@ -21,7 +21,7 @@ import datetime
 import sqlite3
 
 from export import Submission, SubmissionResult
-from stay import Stay
+from stay import Stay, derive_status
 from tracciato import Guest
 
 SCHEMA = """
@@ -65,6 +65,13 @@ CREATE TABLE IF NOT EXISTS submission_result (
     outcome        TEXT,                       -- "" manifest -> exported_unverified at confirm
     portal_line_no INTEGER,                    -- alloggiati verdict loop — stubbed
     portal_reason  TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS guest_lineage (
+    guest_id        INTEGER PRIMARY KEY REFERENCES guest(id),
+    prior_guest_id  INTEGER REFERENCES guest(id)
+    -- a receipt of OUR OWN supplement carry-forward (deterministic copy,
+    -- §8.5.3) — NOT the stubbed person_key (fuzzy match of independent
+    -- uploads). Export facts survive the carry through this chain (§8.5.4).
 );
 CREATE TABLE IF NOT EXISTS stay (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,6 +130,11 @@ def init_db(conn):
     for col, ddl in (("skip_flag", "TEXT DEFAULT ''"), ("stay_id", "INTEGER")):
         if col not in cols:
             conn.execute(f"ALTER TABLE guest ADD COLUMN {col} {ddl}")
+    lv_cols = [r[1] for r in conn.execute("PRAGMA table_info(list_version)")]
+    if "relation_to_prior" not in lv_cols:
+        # §13.4 / §8.5.3: initial | correction | supplement ('' = pre-3 rows)
+        conn.execute("ALTER TABLE list_version ADD COLUMN "
+                     "relation_to_prior TEXT DEFAULT ''")
     conn.commit()
 
 
@@ -136,8 +148,9 @@ def save_list(conn, guests, *, hotel, source_filename, stays=None):
     cur = conn.cursor()
     cur.execute("INSERT INTO guest_list (hotel, created_at) VALUES (?, ?)", (hotel, _now()))
     gl_id = cur.lastrowid
-    cur.execute("INSERT INTO list_version (guest_list_id, source_filename, created_at) "
-                "VALUES (?, ?, ?)", (gl_id, source_filename, _now()))
+    cur.execute("INSERT INTO list_version (guest_list_id, source_filename, "
+                "created_at, relation_to_prior) VALUES (?, ?, ?, 'initial')",
+                (gl_id, source_filename, _now()))
     lv_id = cur.lastrowid
 
     cols = ["list_version_id", "idx"] + _GUEST_COLS
@@ -305,11 +318,27 @@ def record_alloggiati_submission(conn, list_version_id, artifact_text,
 
 
 def _exported_guest_ids(conn, list_version_id):
-    return {r[0] for r in conn.execute(
+    """Guests of this version with a confirmed pms result — ANCESTOR-AWARE:
+    a carried guest inherits its lineage chain's results (the chain is a
+    receipt of our own supplement copy, exact by construction; NOT the
+    stubbed person_key). The confirmed set spans versions on purpose: an
+    ancestor's result lives on the prior version's submission."""
+    confirmed = {r[0] for r in conn.execute(
         "SELECT DISTINCT r.guest_id FROM submission_result r "
         "JOIN submission s ON s.id = r.submission_id "
-        "WHERE s.list_version_id = ? AND s.target = 'pms' "
-        "AND r.outcome = 'exported_unverified'", (list_version_id,))}
+        "WHERE s.target = 'pms' AND r.outcome = 'exported_unverified'")}
+    lineage = dict(conn.execute(
+        "SELECT guest_id, prior_guest_id FROM guest_lineage"))
+    out = set()
+    for gid, _ in load_guests_with_ids(conn, list_version_id):
+        cur, seen = gid, set()
+        while cur is not None and cur not in seen:
+            if cur in confirmed:
+                out.add(gid)
+                break
+            seen.add(cur)
+            cur = lineage.get(cur)
+    return out
 
 
 def pms_delta(conn, list_version_id):
@@ -350,3 +379,101 @@ def load_results(conn, submission_id):
            f"WHERE submission_id = ? ORDER BY guest_id")
     return [SubmissionResult(**dict(zip(_RES_COLS, row)))
             for row in conn.execute(sql, (submission_id,)).fetchall()]
+
+
+# --- supplement accumulation (addendum §8.5.3; commit 3) ------------------------
+
+def apply_supplement(conn, prior_version_id, supplement, *, source_filename):
+    """§8.5.3: a supplement is a NEW version (relation_to_prior='supplement')
+    carrying the prior version's guests forward and attaching the newly named
+    ones to ONE coarse block stay — slot-binding deferred to a counter.
+
+    Which list a supplement belongs to is the CALLER's statement (a UI
+    selection, never an inference): `prior_version_id` says it.
+
+    - Carried guests get fresh rows; guest_lineage records new -> old — a
+      receipt of our own deterministic copy, so export facts survive the
+      carry (§8.5.4's stepfather: the 25 stay exported, the delta offers 5).
+    - The prior version's held stays MERGE into one block stay: pax_expected
+      = their sum, verbatim = their distinct texts joined (§8.5.7 provenance
+      preserved), status derived from the counter — 'over' becomes reachable
+      here. Named/complete and unrecognized stays carry forward unchanged.
+    - Supplement guests attach to the block (their own parse-side named
+      stays are dropped: the block is the unit). The supplement file's
+      NON-guest rows survive on their own: its held rows ADD capacity as
+      separate stays; its unrecognized rows carry as-is — the dispatch
+      floor holds through supplements.
+    - The prior version is never touched. Returns the new version id."""
+    row = conn.execute("SELECT guest_list_id FROM list_version WHERE id = ?",
+                       (prior_version_id,)).fetchone()
+    if row is None:
+        raise ValueError(f"no list_version {prior_version_id}")
+    gl_id = row[0]
+
+    prior_pairs = load_guests_with_ids(conn, prior_version_id)
+    prior_stays = load_stays(conn, prior_version_id)
+    held = [s for s in prior_stays if s.status == "names_pending"]
+    kept = [s for s in prior_stays if s.status != "names_pending"]
+    new_guests = list(supplement.guests)
+    supp_extra = [s for s in supplement.stays
+                  if s.status in ("names_pending", "unrecognized")]
+
+    next_sid = max([s.stay_id for s in prior_stays], default=0) + 1
+    held_ids = {s.stay_id for s in held}
+    # names a PREVIOUS supplement attached to the previous block are carried
+    # onto the new block too — they count toward its stored status
+    carried_onto_block = sum(1 for _, g in prior_pairs if g.stay_id in held_ids)
+    block = None
+    if held or new_guests:
+        block_pax = sum(s.pax_expected for s in held)
+        block = Stay(stay_id=next_sid,
+                     pax_expected=block_pax,
+                     status=derive_status(block_pax,
+                                          carried_onto_block + len(new_guests)),
+                     verbatim=" | ".join(dict.fromkeys(
+                         s.verbatim for s in held if s.verbatim)),
+                     source_row=None)   # a block spans rows; per-row texts kept above
+        next_sid += 1
+    remapped = []
+    for s in supp_extra:
+        remapped.append(dataclasses.replace(s, stay_id=next_sid))
+        next_sid += 1
+
+    cur = conn.cursor()
+    cur.execute("INSERT INTO list_version (guest_list_id, source_filename, "
+                "created_at, relation_to_prior) VALUES (?, ?, ?, 'supplement')",
+                (gl_id, source_filename, _now()))
+    new_vid = cur.lastrowid
+
+    g_cols = ["list_version_id", "idx"] + _GUEST_COLS
+    g_sql = (f"INSERT INTO guest ({', '.join(g_cols)}) "
+             f"VALUES ({', '.join('?' * len(g_cols))})")
+
+    def _gvals(g):
+        return [int(v) if c == "born_in_italy" else v
+                for c, v in ((c, getattr(g, c)) for c in _GUEST_COLS)]
+
+    idx = 0
+    for old_id, g in prior_pairs:                      # carried, verbatim
+        if block is not None and g.stay_id in held_ids:
+            # a guest attached to a merged held stay (a PREVIOUS supplement's
+            # block) moves to the new block — otherwise a chain of
+            # supplements orphans them and pending silently corrupts
+            g = dataclasses.replace(g, stay_id=block.stay_id)
+        cur.execute(g_sql, [new_vid, idx] + _gvals(g))
+        cur.execute("INSERT INTO guest_lineage (guest_id, prior_guest_id) "
+                    "VALUES (?, ?)", (cur.lastrowid, old_id))
+        idx += 1
+    for g in new_guests:                               # attach to the block
+        cur.execute(g_sql, [new_vid, idx]
+                    + _gvals(dataclasses.replace(g, stay_id=block.stay_id)))
+        idx += 1
+
+    s_cols = ["list_version_id"] + _STAY_COLS
+    s_sql = (f"INSERT INTO stay ({', '.join(s_cols)}) "
+             f"VALUES ({', '.join('?' * len(s_cols))})")
+    for s in kept + ([block] if block else []) + remapped:
+        cur.execute(s_sql, [new_vid] + [getattr(s, c) for c in _STAY_COLS])
+
+    conn.commit()
+    return new_vid

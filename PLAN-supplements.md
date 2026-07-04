@@ -96,6 +96,14 @@ awaiting approval, no implementation yet.
   living-surface sweep (CLAUDE.md current-state rewrite, READMEs, 13/13
   counts). /docs records other than the new rev5 remain untouched.
 
+## 3b. Build-time addendum (discovered designing the chain test)
+
+Carried guests whose `stay_id` points at a MERGED held stay (i.e. names a
+previous supplement already attached to the previous block) are re-pointed to
+the new block during carry-forward. Without this, a chain of supplements
+orphans them — their stay vanishes in the merge and `pending` silently
+corrupts. Pinned by the chain-of-two test.
+
 ## 4. Test plan (test_supplements.py) + touched assertions
 
 **The flagship — the whole Monday→Wednesday story on real data:** textmail

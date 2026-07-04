@@ -7,9 +7,9 @@ downstream, human review in the middle. Pure Python, plain-`assert` tests.
 
 ## How to run the tests (do this before and after any change)
 ```
-./run_tests.sh        # builds the golden file, runs all 12 suites, prints ALL GREEN (12/12)
+./run_tests.sh        # builds the golden file, runs all 13 suites, prints ALL GREEN (13/13)
 ```
-Never edit a `.py` and assume it works — run this. All 12 must stay green.
+Never edit a `.py` and assume it works — run this. All 13 must stay green.
 
 ## The one architectural rule, never break it
 The LLM touches data exactly once, at the boundary (messy doc → a `ColumnMap`).
@@ -52,7 +52,7 @@ final file, never picks a code-table code, never talks to the portal.
 - `soglia-demo.jsx` — standalone React UI mockup (not yet wired to anything).
 
 ## Current state (verified)
-- Deterministic engine + SQLite: **built, 12/12 tests green.**
+- Deterministic engine + SQLite: **built, 13/13 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
 - **Never validated live:** the stage-1 LLM call has only ever run against saved fixtures (`replay_caller`). The `ColumnMap`s in `maps.py` are hand-written stand-ins. Running stage 1 against a live model on real documents — and building the ~20-list eval set — is the key open empirical task.
 - **Incomplete-list / supplement / dual-target-export work** (design ground

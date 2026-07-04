@@ -107,6 +107,16 @@ def reconcile(stays, guests) -> dict:
             "overage": overage, "unrecognized": unrecognized}
 
 
+def derive_status(pax_expected: int, named: int) -> str:
+    """Counter -> STAY.status (§8.5.2/§8.5.3): the block's stored status when
+    a supplement is applied. Overfill is "over" — surfaced as the overage
+    advisory, never blocking completeness (an extra named person is still a
+    registrable person)."""
+    if named > pax_expected:
+        return "over"
+    return "complete" if named == pax_expected else "names_pending"
+
+
 def completeness_status(reconciliation: dict) -> str:
     """§8.5.1 completeness axis. Overage is advisory and NON-blocking. An
     UNRECOGNIZED row blocks `complete` exactly like pending pax — a row the
