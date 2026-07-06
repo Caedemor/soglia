@@ -112,3 +112,26 @@ live-quality record in the repo.
 The `held_row`-hint bundle (next cycle — instrument before intervention);
 prompt changes of any kind; the ~20-list corpus itself (accumulates as
 lists arrive); auto-commit machinery; multi-model campaigns; the app tiers.
+
+## 7. Review outcome (user) + build-time adjustments
+
+- **Call 1 approved as B**: expectations-file standard; hand-map bonus
+  scoring on the dev four. Call 2 approved as drawn ("gate only the core
+  parts of the product"); the `required_fields` per-list dial is built,
+  DEFAULT EMPTY. Rails + the inaugural-live-eval review step approved.
+- **Layout adjustment**: code lives FLAT at the repo root
+  (`eval_harness.py`, `run_eval.py`) per house style — and a Python
+  package named `eval` would shadow a builtin — while `eval/` holds DATA
+  only (`expectations/`, `scorecards/`).
+- **Dev expectations are BOOTSTRAPPED from the pinned hand parses**
+  (persons verbatim from the parse fifteen suites + the live battery
+  already established as ground truth), then frozen as static, human-
+  auditable files; future lists are hand-authored from the document. The
+  §3 self-check stays fully meaningful for those future files.
+- **The engine gate, made precise**: the full path must run green on the
+  live output — persist → version_completeness → PMS artifact → export →
+  confirm → coverage `full`, delta empty. The completeness STATUS itself
+  is a soft metric (an optional `completeness` expectations key), since
+  junk disposition legitimately shifts polish's totals.
+- **Core API**: `evaluate_list(rows, expectations, callers)` is the
+  testable unit; the corpus manifest and CLI wrap it.
