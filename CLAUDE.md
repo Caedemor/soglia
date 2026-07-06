@@ -52,6 +52,14 @@ final file, never picks a code-table code, never talks to the portal.
 - `export.py` — PMS artifact (canonical CSV, injectable builder — Bedzzle
   template incoming lands as another builder) + `Submission`/`SubmissionResult`.
 - `data/` — four ANONYMIZED sample lists (Ukrainian .docx 39, Polish .xlsx 48, Italian .xlsx 23, text-mail TSV 47).
+- `eval_harness.py` + `run_eval.py` — the stage-1 eval instrument
+  (PLAN-eval-harness.md): hard gates (map compiles, 100% person recall,
+  held arithmetic, required_fields dial, ENGINE PATH green) vs soft
+  metrics (junk disposition, role, coverage, stability, hand-map parity).
+  Ground truth: `eval/expectations/*.json` (committed); scorecards:
+  `eval/scorecards/` (written by the harness, COMMITTED by the runner);
+  raw captures: dated gitignored `*.live.json`. `--live` is opt-in;
+  `real-data/` is refused.
 - `soglia-demo.jsx` — standalone React UI mockup (not wired to anything;
   predates the STAY/export engine — visual inspiration for the review-UI
   cycle, not a spec).
@@ -71,9 +79,13 @@ final file, never picks a code-table code, never talks to the portal.
   (park's fixture carries the Al.Mat skip no live run produced; live runs
   emitted `column_empty` instead). Raw live captures are LOCAL, regenerable,
   gitignored `*.live.json`. Still genuinely open: a textmail fixture (bundled
-  with the `held_row`-hint contract unfreeze), **the ~20-list eval set** (the
-  key empirical task), and the production model/provider choice — the caller
-  is the swappable data-residency plug. Full record:
+  with the `held_row`-hint contract unfreeze — the FIRST intervention the
+  eval instrument will measure), **the eval corpus** (the instrument is
+  BUILT: `eval_harness.py` + `run_eval.py` + suite 15; lists accumulate as
+  they arrive — an expectations file per list, minutes each; live runs and
+  scorecard commits happen ONLY on the machine with the key), and the
+  production model/provider choice — the caller is the swappable
+  data-residency plug. Full record:
   [docs/handoff-rev5.md](docs/handoff-rev5.md) §2 + §7.
 - **Incomplete-list / supplement / dual-target-export work** (design ground
   truth: [docs/rooming-list-schema-rev3-addendum-A.md](docs/rooming-list-schema-rev3-addendum-A.md)):

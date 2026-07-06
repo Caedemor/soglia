@@ -11,12 +11,14 @@ testable Python (stage 2 onward). The model never writes output files, never
 picks code-table codes, never talks to the portal.
 
 Status: **the engine is complete** — all four §8.5.8 build commits plus the
-dispatch floor (`./run_tests.sh` — 14 suites): STAY/held-capacity
+dispatch floor (`./run_tests.sh` — 15 suites): STAY/held-capacity
 reconciliation, no row with content ever vanishes, export-state tracking
 with delta-first re-export, supplement accumulation, and the two audited
 human assertions (mark-complete override; confirm-export). Stage 1 is
 validated LIVE against the model on the dev lists (fixtures are captured
-output). Next: the app tiers (server, review UI + edit loop, wrapper).
+output). The stage-1 eval instrument is in (`run_eval.py` — the corpus accumulates
+as anonymized lists arrive). Next: the app tiers (server, review UI + edit
+loop, wrapper).
 Current-state record: docs/handoff-rev5.md (dated postscript for commit 4).
 
 Start with [README_START_HERE.md](README_START_HERE.md) (first-time setup)
