@@ -7,9 +7,9 @@ downstream, human review in the middle. Pure Python, plain-`assert` tests.
 
 ## How to run the tests (do this before and after any change)
 ```
-./run_tests.sh        # builds the golden file, runs all 14 suites, prints ALL GREEN (14/14)
+./run_tests.sh        # builds the golden file, runs all 15 suites, prints ALL GREEN (15/15)
 ```
-Never edit a `.py` and assume it works — run this. All 14 must stay green.
+Never edit a `.py` and assume it works — run this. All 15 must stay green.
 
 ## The one architectural rule, never break it
 The LLM touches data exactly once, at the boundary (messy doc → a `ColumnMap`).
@@ -57,7 +57,7 @@ final file, never picks a code-table code, never talks to the portal.
   cycle, not a spec).
 
 ## Current state (verified)
-- Deterministic engine + SQLite: **built, 14/14 tests green.**
+- Deterministic engine + SQLite: **built, 15/15 tests green.**
 - **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
 - **Stage 1 IS validated live** on ALL FOUR dev lists (checkpoint re-measure +
   same-day closing battery,

@@ -22,7 +22,7 @@ Run this in the folder:
 ```
 ./run_tests.sh
 ```
-You should see **ALL GREEN (14/14)**. (On Windows without bash, run instead:
+You should see **ALL GREEN (15/15)**. (On Windows without bash, run instead:
 `python build_golden.py` then `python test_tracciato.py`, etc.)
 
 All four real sample lists parse through the one engine: Ukrainian .docx = 39
@@ -43,7 +43,7 @@ through stage 1, and the production model/provider choice is deliberately open.
 2. First message:
    *"Initialize a git repository here, make the first commit, then run ./run_tests.sh and show me the result."*
    (If you also created a GitHub account: add *"...then create a private GitHub repo and push it."*)
-3. Confirm 14/14 green. Now you have a versioned, backed-up baseline — the thing
+3. Confirm 15/15 green. Now you have a versioned, backed-up baseline — the thing
    that makes the rot above impossible to repeat.
 4. (Done — steps 1–3 and the first live-model comparison are history; the repo
    is versioned, on GitHub, and the §8.5.8 engine is complete.) The real next

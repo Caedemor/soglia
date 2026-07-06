@@ -1,0 +1,40 @@
+{
+ "list": "park",
+ "persons": [
+  "ROSSI Alessandro",
+  "RUSSO Lorenzo",
+  "FERRARI Matteo",
+  "ESPOSITO Davide",
+  "BIANCHI Simone",
+  "ROMANO Giulia",
+  "GALLO Federico",
+  "CONTI Sofia",
+  "GIORDANO Davide",
+  "MANCINI Salvatore",
+  "COSTA Federico",
+  "RIZZO Vincenzo",
+  "LOMBARDI Tommaso",
+  "MORETTI Giuseppe",
+  "BARBIERI Gabriele",
+  "FONTANA Carlo",
+  "SANTORO Emanuele",
+  "MARIANI Daniele",
+  "RINALDI Paolo",
+  "CARUSO Martina",
+  "FERRARA Chiara",
+  "GALLI Roberto",
+  "MARTINI Antonio"
+ ],
+ "held_pax_total": 18,
+ "junk_rows": 0,
+ "field_coverage": {
+  "sesso": 0,
+  "data_nascita": 0,
+  "cittadinanza": 0,
+  "tipo_documento": 0,
+  "numero_documento": 0
+ },
+ "required_fields": [],
+ "completeness": "awaiting_completion",
+ "notes": "bootstrapped from the pinned hand parse (PLAN-eval-harness §7); future lists: hand-authored from the document itself."
+}
