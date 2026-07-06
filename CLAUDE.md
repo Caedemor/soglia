@@ -66,7 +66,10 @@ final file, never picks a code-table code, never talks to the portal.
 
 ## Current state (verified)
 - Deterministic engine + SQLite: **built, 15/15 tests green.**
-- **Not yet done:** the web server tier (Flask/FastAPI bridging UI↔engine), wiring the React demo to it, the Electron wrap.
+- **Not yet done:** the app tiers — a thin web server (Flask/FastAPI
+  bridging UI↔engine), the review UI + edit loop (the jsx mockup is
+  inspiration, not spec), export buttons over the commit-2/4 machinery,
+  the wrapper.
 - **Stage 1 IS validated live** on ALL FOUR dev lists (checkpoint re-measure +
   same-day closing battery,
   2026-07-04: every live run's map reproduces the hand-map guests on mix18 and
@@ -132,6 +135,47 @@ final file, never picks a code-table code, never talks to the portal.
   the completeness axis says done while 2 drivers are unnamed; the red gate is
   what blocks it today). Moves polish counts across four suites — needs its
   own blast radius.
+
+## Collaboration protocol (how this repo is actually worked)
+
+Three roles, proven over the engine build (July 2026):
+- **Web-chat Claude (the sandbox):** designs and builds every cycle in a
+  fresh clone of origin — hermetic, NO API key, never runs live. Delivers
+  work as `git format-patch` files plus a scripted review prompt.
+- **Claude Code (the machine):** applies patches (`git am`), reviews
+  adversarially, runs everything LIVE (stage-1 calls, eval campaigns),
+  pushes branches, executes scripted fixup-and-merge prompts.
+- **The user** arbitrates contested review calls and owns the field inputs
+  (new lists, the Bedzzle template) and API spend.
+
+The cycle: read the governing doc VERBATIM (never from memory) → commit a
+`PLAN-*.md` design brief → STOP for the user's pass → build → full suite +
+demos → format-patch + pristine-clone verify (tree-hash compare) →
+adversarial review on the machine → branch pushed → findings arbitrated →
+scripted fixups → `--ff-only` merge → the sandbox byte-verifies origin →
+branch deleted. Main is never force-pushed and never red.
+
+Records discipline: pushed commit messages are never rewritten. PLAN files
+amend before merge only; afterward, dated postscripts. `/docs` revisions
+are sealed (additive dated postscripts only). Scorecards are committed by
+the runner as an explicit act; raw captures stay gitignored.
+
+Process rules (each paid for at least once):
+- This file is read TOP TO BOTTOM in every doc pass — never anchor-grepped
+  (three stale-line escapes taught this).
+- Multi-line shell: `set -e` + NEWLINE-separated commands, never
+  `&&`-chains across lines — `set -e` exempts `&&`-list members by design
+  (three false-commit incidents taught this).
+- Bulk edits go through anchor-asserted replacement (`count == 1`): a
+  wrong anchor must fail loudly, never skip silently.
+- Suite-count surfaces: `run_tests.sh` + this file ×3 + README_START_HERE
+  ×2 + the README status — swept in the SAME commit as any suite add.
+- The user's machine: use `/usr/bin/git` (Homebrew git EPERMs there); a
+  background poller leaves stale `.git/index.lock` — remove it, move on.
+- The holdout (`real-data/`) is sealed for EVERYONE; the eval corpus is
+  tuning data by definition and never includes it.
+- A fresh sandbox session: clone origin, read this file FULLY, then
+  `docs/handoff-rev5.md` (§1–§8), then the newest `PLAN-*.md`.
 
 ## SAFETY — this code handles passport data
 - **Never commit real guest data or `soglia.db`.** `.gitignore` blocks them. Only anonymized samples in `data/` belong in git. Real lists go in `real-data/` (gitignored).
