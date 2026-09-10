@@ -1,53 +1,241 @@
 {
  "list": "textmail",
  "persons": [
-  "Klimowicz Ks. Tomasz",
-  "Lisowska Barbara",
-  "Gawron Renata",
-  "Gawron Halina",
-  "Lasocka Aleksandra",
-  "Lasocka Justyna",
-  "Lasocki Andrzej",
-  "Plewa Iwona",
-  "Cichoń Irena",
-  "Paszek Sylwia",
-  "Jastrzębska Danuta",
-  "Jastrzębska Helena",
-  "Grabowska Karolina",
-  "Grabowska Barbara",
-  "Sawicka Urszula",
-  "Bartoś Wanda",
-  "Stankiewicz Barbara",
-  "Czapla Jolanta",
-  "Bienias Aleksandra",
-  "Łopatka Lidia",
-  "Łopatka Szymon",
-  "Kwiecień Lidia",
-  "Baran Zbigniew",
-  "Baran Helena",
-  "Musiał Stanisława",
-  "Maślaniec Lidia",
-  "Kaczmarek Tomasz",
-  "Rzepka Tomasz",
-  "Wojtkiewicz Iwona",
-  "Michałowska Magdalena",
-  "Motyka Edyta",
-  "Stolarska Barbara",
-  "Gondek Urszula",
-  "Kukuła Karolina",
-  "Kukuła Wojciech",
-  "Kukuła Oliwia",
-  "Kukuła Magdalena",
-  "Tkacz Urszula",
-  "Śliwa Patrycja",
-  "Śliwa Tomasz",
-  "Matysiak Eugenia",
-  "Sitko Franciszka",
-  "Stasiewicz Edyta",
-  "Wróbel Izabela",
-  "Żurawska Magdalena",
-  "Żurawska Mirosława",
-  "Hejnar Danuta"
+  {
+   "name": "Klimowicz Ks. Tomasz",
+   "data_nascita": "14/07/1992",
+   "numero_documento": "KPT 837261",
+   "role": "18"
+  },
+  {
+   "name": "Lisowska Barbara",
+   "data_nascita": "21/09/1964",
+   "numero_documento": "MRW 5042316"
+  },
+  {
+   "name": "Gawron Renata",
+   "data_nascita": "30/05/1973",
+   "numero_documento": "HGA 214905"
+  },
+  {
+   "name": "Gawron Halina",
+   "data_nascita": "08/02/1971",
+   "numero_documento": "NEB 573018"
+  },
+  {
+   "name": "Lasocka Aleksandra",
+   "data_nascita": "17/09/1961",
+   "numero_documento": "RTS 128467"
+  },
+  {
+   "name": "Lasocka Justyna",
+   "data_nascita": "22/03/1987",
+   "numero_documento": "PWK 069538"
+  },
+  {
+   "name": "Lasocki Andrzej",
+   "data_nascita": "02/10/1957",
+   "numero_documento": "GLM 745210"
+  },
+  {
+   "name": "Plewa Iwona",
+   "data_nascita": "15/04/1972",
+   "numero_documento": "BSN 391706"
+  },
+  {
+   "name": "Cichoń Irena",
+   "data_nascita": "29/08/1955",
+   "numero_documento": "WDK 508342"
+  },
+  {
+   "name": "Paszek Sylwia",
+   "data_nascita": "26/01/1985",
+   "numero_documento": "TNC 926180"
+  },
+  {
+   "name": "Jastrzębska Danuta",
+   "data_nascita": "12/11/1967",
+   "numero_documento": "GK 7261054"
+  },
+  {
+   "name": "Jastrzębska Helena",
+   "data_nascita": "24/06/1959",
+   "numero_documento": "HRP 430562"
+  },
+  {
+   "name": "Grabowska Karolina",
+   "data_nascita": "05/02/1994",
+   "numero_documento": "SWM 187934"
+  },
+  {
+   "name": "Grabowska Barbara",
+   "data_nascita": "09/05/1970",
+   "numero_documento": "KLB 640278"
+  },
+  {
+   "name": "Sawicka Urszula",
+   "data_nascita": "28/01/1962",
+   "numero_documento": "RGN 095713"
+  },
+  {
+   "name": "Bartoś Wanda",
+   "data_nascita": "05/07/1944",
+   "numero_documento": "TWZ 358026"
+  },
+  {
+   "name": "Stankiewicz Barbara",
+   "data_nascita": "11/09/1959",
+   "numero_documento": "PKS 671490"
+  },
+  {
+   "name": "Czapla Jolanta",
+   "data_nascita": "14/02/1957",
+   "numero_documento": "MZ 5093412"
+  },
+  {
+   "name": "Bienias Aleksandra",
+   "data_nascita": "18/04/2013",
+   "numero_documento": "RW 6082735"
+  },
+  {
+   "name": "Łopatka Lidia",
+   "data_nascita": "03/06/1966",
+   "numero_documento": "BHT 219654"
+  },
+  {
+   "name": "Łopatka Szymon",
+   "data_nascita": "23/09/2010",
+   "numero_documento": "GDR 507183"
+  },
+  {
+   "name": "Kwiecień Lidia",
+   "data_nascita": "19/08/1963",
+   "numero_documento": "WNK 836470"
+  },
+  {
+   "name": "Baran Zbigniew",
+   "data_nascita": "27/03/1958",
+   "numero_documento": "SLM 174092"
+  },
+  {
+   "name": "Baran Helena",
+   "data_nascita": "10/12/1964",
+   "numero_documento": "HCB 962385"
+  },
+  {
+   "name": "Musiał Stanisława",
+   "data_nascita": "06/04/1954",
+   "numero_documento": "NKW 350716"
+  },
+  {
+   "name": "Maślaniec Lidia",
+   "data_nascita": "21/10/1977",
+   "numero_documento": "PBD 601843"
+  },
+  {
+   "name": "Kaczmarek Tomasz",
+   "data_nascita": "15/08/1968",
+   "numero_documento": "TRW  495028"
+  },
+  {
+   "name": "Rzepka Tomasz",
+   "data_nascita": "12/03/2005",
+   "numero_documento": "KGS 273861"
+  },
+  {
+   "name": "Wojtkiewicz Iwona",
+   "data_nascita": "17/05/1969",
+   "numero_documento": "BNM 518709"
+  },
+  {
+   "name": "Michałowska Magdalena",
+   "data_nascita": "24/11/1961",
+   "numero_documento": "WCT 946150"
+  },
+  {
+   "name": "Motyka Edyta",
+   "data_nascita": "08/07/1970",
+   "numero_documento": "RDP 380526"
+  },
+  {
+   "name": "Stolarska Barbara",
+   "data_nascita": "03/09/1972",
+   "numero_documento": "GHK 725019"
+  },
+  {
+   "name": "Gondek Urszula",
+   "data_nascita": "17/02/1962",
+   "numero_documento": "SBW 164873"
+  },
+  {
+   "name": "Kukuła Karolina",
+   "data_nascita": "09/08/2014",
+   "numero_documento": "NPT 592304"
+  },
+  {
+   "name": "Kukuła Wojciech",
+   "data_nascita": "16/01/1975",
+   "numero_documento": "HWD 837516"
+  },
+  {
+   "name": "Kukuła Oliwia",
+   "data_nascita": "29/03/2012",
+   "numero_documento": "KRC 208647"
+  },
+  {
+   "name": "Kukuła Magdalena",
+   "data_nascita": "11/10/1976",
+   "numero_documento": "BGL 471935"
+  },
+  {
+   "name": "Tkacz Urszula",
+   "data_nascita": "14/08/1960",
+   "numero_documento": "TSN 650298"
+  },
+  {
+   "name": "Śliwa Patrycja",
+   "data_nascita": "19/06/1974",
+   "numero_documento": "WKM 913750"
+  },
+  {
+   "name": "Śliwa Tomasz",
+   "data_nascita": "07/04/1979",
+   "numero_documento": "PDH 386124"
+  },
+  {
+   "name": "Matysiak Eugenia",
+   "data_nascita": "13/12/1951",
+   "numero_documento": "GTB 542907"
+  },
+  {
+   "name": "Sitko Franciszka",
+   "data_nascita": "27/10/1970",
+   "numero_documento": "RNS 069381"
+  },
+  {
+   "name": "Stasiewicz Edyta",
+   "data_nascita": "25/06/1972",
+   "numero_documento": "MWP 815243"
+  },
+  {
+   "name": "Wróbel Izabela",
+   "data_nascita": "15/03/1977",
+   "numero_documento": "HN 2483069"
+  },
+  {
+   "name": "Żurawska Magdalena",
+   "data_nascita": "28/05/1964",
+   "numero_documento": "KDT 730596"
+  },
+  {
+   "name": "Żurawska Mirosława",
+   "data_nascita": "19/09/1953",
+   "numero_documento": "SGP 197428"
+  },
+  {
+   "name": "Hejnar Danuta",
+   "data_nascita": "30/07/1962"
+  }
  ],
  "held_pax_total": 2,
  "junk_rows": 0,
@@ -58,7 +246,10 @@
   "tipo_documento": 46,
   "numero_documento": 46
  },
- "required_fields": [],
+ "required_fields": [
+  "data_nascita",
+  "numero_documento"
+ ],
  "completeness": "awaiting_completion",
- "notes": "bootstrapped from the pinned hand parse (PLAN-eval-harness §7); future lists: hand-authored from the document itself."
+ "notes": "persons carry hand-labelled data_nascita + numero_documento from labels/text_mail_rooming_list_anonymized_ground_truth.json (read from the document, NOT bootstrapped from the parser). sesso stays empty: the source has no sex column. The name is the VERBATIM source cell — guest 1 keeps 'Ks. Tomasz' and the labeller's role reading rides as a soft 'role' field (PLAN-eval-hygiene-and-floor A5/A6)."
 }

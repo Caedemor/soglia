@@ -22,6 +22,9 @@ anything it gets wrong still meets the validator downstream.
 """
 import json
 import os
+import socket
+import time
+import urllib.error
 import urllib.request
 
 from parser import (ColumnMap, FieldRule, NameSlot, CANON_FIELDS, NORMALIZERS,
@@ -161,9 +164,41 @@ def infer_map(sample_rows, model_caller):
 
 # --- model callers: the swappable plug --------------------------------------
 
-def anthropic_caller(prompt, *, model="claude-sonnet-4-6", api_key=None, max_tokens=2000):
+def _is_transient(exc):
+    """Timeouts, 429 and 5xx are worth another attempt. Every other 4xx is
+    NOT: a 401/403/400 is a bad key or a malformed request, and retrying it
+    just burns the caller's spend three times instead of once."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code == 429 or 500 <= exc.code < 600
+    if isinstance(exc, socket.timeout):
+        return True
+    # URLError wraps connection-level failures (DNS, refused, timeout)
+    return isinstance(exc, urllib.error.URLError)
+
+
+def with_retry(call, *, attempts=3, sleep=time.sleep):
+    """Run `call()`, retrying only TRANSIENT failures with 1s/2s/4s backoff.
+
+    A campaign is many calls; one 529 mid-run used to lose the whole thing and
+    the spend with it. `sleep` is injected so tests exercise the logic without
+    actually waiting."""
+    for attempt in range(1, attempts + 1):
+        try:
+            return call()
+        except Exception as e:
+            if attempt == attempts or not _is_transient(e):
+                raise
+            sleep(2 ** (attempt - 1))
+
+
+def anthropic_caller(prompt, *, model="claude-sonnet-4-6", api_key=None,
+                     max_tokens=2000, attempts=3, sleep=time.sleep):
     """Real caller: Anthropic's API. Needs a key. Swap this out for a local model
-    if your data-residency decision is to keep everything on your own hardware."""
+    if your data-residency decision is to keep everything on your own hardware.
+
+    Transient failures are retried (see `with_retry`); anything else raises on
+    the first attempt. `replay_caller` is deliberately NOT wrapped — offline
+    behavior stays byte-identical."""
     api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError(
@@ -175,8 +210,12 @@ def anthropic_caller(prompt, *, model="claude-sonnet-4-6", api_key=None, max_tok
                          "messages": [{"role": "user", "content": prompt}]}).encode("utf-8"),
         headers={"content-type": "application/json", "x-api-key": api_key,
                  "anthropic-version": "2023-06-01"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = json.loads(r.read())
+
+    def _once():
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read())
+
+    data = with_retry(_once, attempts=attempts, sleep=sleep)
     return "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
 
 

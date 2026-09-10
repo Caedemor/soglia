@@ -47,6 +47,19 @@ EXPECTATIONS_DIR = os.path.join(os.path.dirname(__file__), "eval", "expectations
 SCORECARDS_DIR = os.path.join(os.path.dirname(__file__), "eval", "scorecards")
 
 
+# Soft-metric keys excluded from the stability hash. `review_notes` is free
+# model prose that varies every run, so including it made the metric read
+# "unstable" always — scorecard #1 was identical_outcomes=False on all four
+# lists for that reason alone, drowning textmail's ONE real instability.
+_STABILITY_EXCLUDE = ("review_notes",)
+
+
+def _stability_key(soft):
+    return json.dumps({k: v for k, v in soft.items()
+                       if k not in _STABILITY_EXCLUDE},
+                      sort_keys=True, default=str)
+
+
 # --- person matching: casefolded token multisets (plan call 3) ------------------
 
 def _person_key(name):
@@ -74,10 +87,57 @@ def match_persons(expected_names, guests):
 
 # --- the gate/metric core over an already-transcribed result --------------------
 
-def _field_coverage(guests, expected_names):
+_LABEL_FIELDS = ("data_nascita", "numero_documento", "sesso", "role")
+
+
+def expected_persons(expectations):
+    """-> [(name, {field: expected_value})]. An entry in `persons` is either a
+    plain string (name only, the original schema) or an object carrying any
+    subset of hand-labelled fields. Both forms coexist on purpose: names come
+    cheap from reading a document, field values cost real labelling effort, so
+    a list can carry the first without the second."""
+    out = []
+    for p in expectations["persons"]:
+        if isinstance(p, str):
+            out.append((p, {}))
+        else:
+            out.append((p["name"], {f: p[f] for f in _LABEL_FIELDS
+                                    if p.get(f, "")}))
+    return out
+
+
+def expected_names(expectations):
+    return [n for n, _ in expected_persons(expectations)]
+
+
+def field_accuracy(guests, expectations):
+    """Per field: EXACT matches / persons carrying an expected value.
+
+    The audit's finding was that no gate looked at a single field value. This
+    is the measurement that does — and it only measures where a human actually
+    wrote ground truth down, so it can never be satisfied by our own parser's
+    opinion of the document."""
+    by_key = {}
+    for g in guests:
+        by_key.setdefault(_person_key(f"{g.cognome} {g.nome}"), []).append(g)
+    stats = {}
+    for name, fields in expected_persons(expectations):
+        got = by_key.get(_person_key(name))
+        for f, want in fields.items():
+            if f == "role":
+                continue                      # soft context, not a Guest field
+            hit, total = stats.get(f, (0, 0))
+            total += 1
+            if got and (getattr(got[0], f, "") or "") == want:
+                hit += 1
+            stats[f] = (hit, total)
+    return {f: {"exact": h, "of": t} for f, (h, t) in sorted(stats.items())}
+
+
+def _field_coverage(guests, names):
     """Non-empty counts per canonical field, over guests matched to real
     persons only (junk-as-guest must not inflate coverage)."""
-    keys = {_person_key(n) for n in expected_names}
+    keys = {_person_key(n) for n in names}
     real = [g for g in guests
             if _person_key(f"{g.cognome} {g.nome}") in keys]
     fields = ["sesso", "data_nascita", "cittadinanza",
@@ -90,8 +150,8 @@ def evaluate_transcribed(res, expectations):
     entry point: each dev list's HAND parse must ace its own expectations
     file, or the expectations are wrong."""
     out = {"gates": {}, "soft": {}}
-    missing, extras, matched = match_persons(expectations["persons"],
-                                             res.guests)
+    names = expected_names(expectations)
+    missing, extras, matched = match_persons(names, res.guests)
     out["gates"]["recall"] = not missing
     if missing:
         out["gates"]["missing_persons"] = missing
@@ -104,16 +164,36 @@ def evaluate_transcribed(res, expectations):
         "unrecognized": sum(1 for s in res.stays
                             if s.status == "unrecognized"),
         "flagged": sum(1 for g in res.guests if g.skip_flag),
-        "field_coverage": _field_coverage(res.guests,
-                                          expectations["persons"]),
+        "field_coverage": _field_coverage(res.guests, names),
+        "field_accuracy": field_accuracy(res.guests, expectations),
     })
+    if "unrecognized_rows" in expectations:
+        out["soft"]["unrecognized_expected"] = expectations["unrecognized_rows"]
 
+    # required_fields: 100% EXACT match among the persons carrying an expected
+    # value. The old form demanded coverage == len(persons), which no list
+    # could satisfy unless every single person had the field — textmail's
+    # numero_documento is 46/47 because one guest genuinely has none, so the
+    # gate was unsatisfiable however perfect extraction was. The detail records
+    # the denominator, so a gate that is green only because ground truth is
+    # thin is visible as such.
     req = expectations.get("required_fields", [])
     if req:
-        cov = out["soft"]["field_coverage"]
-        n = len(expectations["persons"])
-        short = {f: cov.get(f, 0) for f in req if cov.get(f, 0) < n}
+        acc = out["soft"]["field_accuracy"]
+        n = len(names)
+        short = {}
+        for f in req:
+            a = acc.get(f)
+            if not a or a["of"] == 0:
+                # gating a field nobody labelled would pass vacuously and read
+                # as strong evidence. Refuse the configuration instead.
+                short[f] = "no ground truth: no person carries an expected value"
+            elif a["exact"] != a["of"]:
+                short[f] = a
         out["gates"]["required_fields"] = not short
+        out["gates"]["required_fields_detail"] = {
+            f: f"{acc.get(f, {}).get('exact', 0)}/"
+               f"{acc.get(f, {}).get('of', 0)} of {n}" for f in req}
         if short:
             out["gates"]["required_fields_short"] = short
 
@@ -154,8 +234,17 @@ def evaluate_run(rows, expectations, map_text):
         out["gates"]["map_valid"] = False
         out["gates"]["map_error"] = f"{type(e).__name__}: {e}"
         return out
-    out = evaluate_transcribed(transcribe_with_stays(rows, cmap),
-                               expectations)
+    try:
+        res = transcribe_with_stays(rows, cmap)
+    except Exception as e:
+        # A map that COMPILES can still be wrong-typed (a string column index,
+        # a string header_rows) and blow up inside transcription. That is a
+        # verdict about this list, never a dead campaign.
+        out["gates"]["map_valid"] = True
+        out["gates"]["transcribe_ok"] = False
+        out["gates"]["transcribe_error"] = f"{type(e).__name__}: {e}"
+        return out
+    out = evaluate_transcribed(res, expectations)
     out["gates"]["map_valid"] = True
     out["soft"]["review_notes"] = review_notes
     out["soft"]["default_role"] = cmap.default_role
@@ -168,7 +257,7 @@ def evaluate_list(rows, expectations, map_texts, handmap_names=None):
     lists' bonus, plan call 1) are soft."""
     runs = [evaluate_run(rows, expectations, t) for t in map_texts]
     gates = {}
-    for name in ("map_valid", "recall", "held_arithmetic",
+    for name in ("map_valid", "transcribe_ok", "recall", "held_arithmetic",
                  "required_fields", "engine_path"):
         vals = [r["gates"][name] for r in runs if name in r["gates"]]
         if vals:
@@ -176,8 +265,7 @@ def evaluate_list(rows, expectations, map_texts, handmap_names=None):
     fail_detail = [r["gates"] for r in runs
                    if not all(v for v in r["gates"].values()
                               if isinstance(v, bool))]
-    stable = len({json.dumps(r["soft"], sort_keys=True, default=str)
-                  for r in runs}) == 1
+    stable = len({_stability_key(r["soft"]) for r in runs}) == 1
     out = {
         "passed": bool(gates) and all(gates.values()),
         "gates": gates,
@@ -206,10 +294,15 @@ def load_expectations(list_name):
 
 def guard_path(path):
     """The holdout is never eval data: eval lists become tuning data through
-    use; real-data/ stays the untouched final exam."""
-    if "real-data" in os.path.abspath(path).split(os.sep):
+    use, so both holdout locations stay the untouched final exam. Executable,
+    not conventional — the seal used to live in prose only."""
+    full = os.path.abspath(path)
+    if "real-data" in full.split(os.sep):
         raise ValueError(f"refusing a list under real-data/ — the holdout "
                          f"is sealed: {path}")
+    if "holdout test data" in full:
+        raise ValueError(f"refusing a list under 'holdout test data/' — the "
+                         f"holdout is sealed: {path}")
 
 
 def run_corpus(corpus, caller_factory, runs=2, label="eval", live=False,
@@ -265,6 +358,9 @@ def render_md(card):
                      f"{soft.get('default_role', '-')}; completeness "
                      f"{soft.get('completeness', '-')}")
             L.append(f"coverage: {soft['field_coverage']}")
+            if soft.get("field_accuracy"):
+                L.append(f"field accuracy (exact/labelled): "
+                         f"{soft['field_accuracy']}")
         for fd in r["fail_detail"]:
             L.append(f"  - fail detail: {fd}")
         if "handmap_parity" in r:

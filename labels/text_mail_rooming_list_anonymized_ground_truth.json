@@ -6,8 +6,10 @@
     "source_file": "text_mail_rooming_list_anonymized.txt",
     "field_semantics": "string fields: \"\" = absent in source (null is a valid answer); born_in_italy: null = unknown",
     "corrections": [
-      "labeler-confirmed 2026-07-02: the '+ 2 autisti' placeholder (guest_no 48 in the original labelling) is HELD capacity, not a named guest. Applied to BOTH files: the workbook's guests sheet now holds the 47 named people and the held row's verbatim text lives on list_level (held_verbatim); total_named 48 -> 47. Pre-correction workbook kept as .xlsx.bak."
-    ]
+      "labeler-confirmed 2026-07-02: the '+ 2 autisti' placeholder (guest_no 48 in the original labelling) is HELD capacity, not a named guest. Applied to BOTH files: the workbook's guests sheet now holds the 47 named people and the held row's verbatim text lives on list_level (held_verbatim); total_named 48 -> 47. Pre-correction workbook kept as .xlsx.bak.",
+      "2026-09-10 (A6): name convention fixed to the verbatim source cell; the 'Ks.' role reading is preserved as soft context, not as a name edit. The cognome/nome fields below are left as the human originally wrote them, matching the .xlsx record."
+    ],
+    "name_convention": "The ground-truth NAME is the VERBATIM source cell, per the engine's 'verbatim means verbatim' invariant: guest 1 is 'Klimowicz' / 'Ks. Tomasz'. This file records the labeller's reading of 'Ks.' as a ROLE (tipo_alloggiato 18) instead — kept, but carried into eval/expectations/textmail.json as a SOFT 'role' field that never gates. Resolved 2026-09-10, PLAN-eval-hygiene-and-floor A6."
   },
   "list_level": {
     "total_named": 47,
