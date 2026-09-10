@@ -20,7 +20,7 @@ from parser import transcribe
 # and the hand map run the SAME transcriber, held recognition included.
 CASES = [
     ("MIX18",  read_docx_rows, MIX18_DOCX, "llm_maps/mix18.json",  parse_mix18, 39),
-    ("POLISH", read_xlsx_rows, POLISH_XLSX, "llm_maps/polish.json", parse_polish, 55),
+    ("POLISH", read_xlsx_rows, POLISH_XLSX, "llm_maps/polish.json", parse_polish, 53),
     ("PARK",   read_xlsx_rows, PARK_XLSX,   "llm_maps/park.json",   parse_park,   23),
 ]
 

@@ -75,6 +75,8 @@ The rows below are arrays of cell strings; column indices are 0-based and refer 
 Canonical fields you may map (omit any the list does not contain — never invent data): {fields}.
 Allowed normalizers (format-only cleaning): {norms}.
   - passthrough: leave as-is. dotted_date: turn 05.12.1984 into 05/12/1984.
+  - ymd_date: for a YEAR-FIRST column, turn 1989.02.04 into 04/02/1989.
+  - sex_mf: turn m/f/male/female/maschio/femmina into 1 (M) / 2 (F).
   - doc_type_passport: for a passport-NUMBER column, also yields the document TYPE.
 
 Return JSON with these keys:

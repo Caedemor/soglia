@@ -163,12 +163,24 @@ def test_other_lists_complete():
     assert completeness_status(reconcile(m.stays, m.guests)) == "complete"
 
     # polish's two non-emitting rows are TRULY EMPTY (census in the plan) —
-    # the floor must not invent stays for them
+    # the floor must not invent stays for them. Separately, its two "Driver N"
+    # rows ARE content: count-less placeholder labels, so disposition 3b makes
+    # them unrecognized stays (53 guests + 2 unrecognized = 55 stays, one per
+    # non-empty row — the total is unchanged, the composition is not).
     p = transcribe_with_stays(read_xlsx_rows(POLISH_XLSX), POLISH_MAP)
-    assert len(p.guests) == 55 and len(p.stays) == 55
-    assert not [s for s in p.stays if s.status == "unrecognized"]
+    assert len(p.guests) == 53 and len(p.stays) == 55
+    unrec = [s for s in p.stays if s.status == "unrecognized"]
+    assert sorted(s.verbatim for s in unrec) == ["Driver 1", "Driver 2"], \
+        "the count-less placeholder rows, verbatim, as unrecognized stays"
+    assert all(s.pax_expected == 0 for s in unrec), "a label holds no pax"
     assert not [s for s in p.stays if s.status == "names_pending"]
-    assert completeness_status(reconcile(p.stays, p.guests)) == "complete"
+    # the empty-row invariant, still pinned: rows 50-51 have no cells at all
+    # and must invent NOTHING — the floor acts on content, never on absence
+    rows = read_xlsx_rows(POLISH_XLSX)
+    assert not any(c.strip() for c in rows[50]) and not any(c.strip() for c in rows[51])
+    assert {s.source_row for s in p.stays}.isdisjoint({50, 51})
+    assert completeness_status(reconcile(p.stays, p.guests)) == "awaiting_completion", \
+        "two unreadable rows must keep the list from reading complete"
 
     # legacy fallback: bespoke guests carry stay_id=None and count 1-for-1
     legacy = [w.guest for w in parse_bespoke()]
@@ -176,8 +188,9 @@ def test_other_lists_complete():
     assert rec == {"expected": 39, "named": 39, "pending": 0, "overage": 0,
                    "unrecognized": 0}
     assert completeness_status(rec) == "complete"
-    print("PASS mix18 (39/39) + polish (55, no held) complete; "
-          "legacy unlinked guests never read as pending")
+    print("PASS mix18 (39/39) complete; polish 53 guests + 2 unrecognized "
+          "'Driver N' stays -> awaiting_completion, empty rows still invent "
+          "nothing; legacy unlinked guests never read as pending")
 
 
 if __name__ == "__main__":

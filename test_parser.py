@@ -66,9 +66,46 @@ def main():
     assert len(got) == 1 and got[0].tipo_alloggiato == "20", \
         "a short row takes the default role, never an IndexError"
 
+    # 5) B1 \u2014 a normalizer must NEVER abort a transcription. Real lists put
+    # prose in date columns; before the guard this raised and killed the list.
+    from parser import transcribe_with_stays
+    prose_map = ColumnMap(
+        header_rows=0, default_role="20",
+        name_slots=[NameSlot(surname_column=0, firstname_column=1)],
+        fields={"data_nascita": FieldRule(column=2, normalizer="dotted_date")})
+    prose = "reserved 2 rooms till 10/07/2026"
+    try:
+        norm_dotted_date(prose)
+        raised = False
+    except Exception:
+        raised = True
+    assert raised, "fixture drift: this input is supposed to break the normalizer"
+    res = transcribe_with_stays(
+        [["ROSSI", "Mario", "01.01.1990"], ["VERDI", "Anna", prose]], prose_map)
+    assert len(res.guests) == 2, "one bad cell must not abort the transcription"
+    assert res.guests[1].data_nascita == prose, \
+        "the RAW cell survives verbatim \u2014 never invented, never dropped"
+    assert not is_submittable(res.guests[1]), "and the validator reds it"
+
+    # 6) B2 \u2014 the two additive normalizers. Neither is used by any fixture or
+    # hand map, so every parity pin is untouched.
+    from parser import norm_ymd_date, norm_sex_mf
+    assert norm_ymd_date("1989.02.04") == "04/02/1989"
+    assert norm_ymd_date("1989-02-04") == "04/02/1989"
+    assert norm_ymd_date("1989/02/04") == "04/02/1989"
+    assert norm_ymd_date("89.02.04") == "89.02.04", \
+        "2-digit year stays VERBATIM here too \u2014 never invent a century"
+    assert norm_ymd_date("not a date") == "not a date" and norm_ymd_date("") == ""
+    assert (norm_sex_mf("M"), norm_sex_mf("f"), norm_sex_mf("MASCHIO"),
+            norm_sex_mf("Femmina")) == ("1", "2", "1", "2")
+    assert norm_sex_mf("X") == "X" and norm_sex_mf("") == "", \
+        "an unrecognized sex marker is a human's call, never a coin flip"
+
     print("\u2713 PASS \u2014 generalized parser is faithful and now handles real-list variety.")
     print("        MIX18-as-a-map == hardcoded (39/39); two-people-per-row -> two guests;")
-    print("        separate & combined names; blank slots skipped; dates normalized.")
+    print("        separate & combined names; blank slots skipped; dates normalized;")
+    print("        a raising normalizer degrades to the verbatim cell (never aborts);")
+    print("        ymd_date + sex_mf convert only what they recognize.")
 
 
 if __name__ == "__main__":

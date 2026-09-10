@@ -31,10 +31,10 @@ MAX_PLAUSIBLE_AGE = 120
 # Whole-word tokens that betray a count / placeholder / note sitting in a name
 # column (e.g. "Al.Mat. arrivi 18 pax", "names pending", "TBD"). Matched as
 # tokens, case-insensitively — never as substrings, so real surnames are safe.
-NAME_PLACEHOLDER_TOKENS = {"pax", "arrivi", "pending", "tbd", "totale"}
+NAME_PLACEHOLDER_TOKENS = {"pax", "arrivi", "pending", "tbd", "tba", "totale"}
 
 
-def _implausible_name(value: str):
+def implausible_name(value: str):
     """Return a short reason if `value` does not read as a personal name, else None.
 
     Judged by CATEGORY, never by matching a specific string, so it degrades
@@ -42,6 +42,11 @@ def _implausible_name(value: str):
       - no alphabetic character at all (e.g. "—", "///");
       - contains digits (no personal name does);
       - contains a count/placeholder token as a whole word.
+
+    PUBLIC on purpose: stage 2 calls this too. A row whose EVERY filled name
+    slot is an implausible label carries no person at all, so `parser.py`
+    routes it to an `unrecognized` Stay rather than emitting a phantom guest.
+    This module still imports nothing but `tracciato`, so that stays acyclic.
 
     Deliberately CONSERVATIVE. A false positive only costs a human a glance, but
     alert fatigue is real — so this must NOT fire on unusual-but-real names:
@@ -121,7 +126,7 @@ def validate_guest(g: Guest, *, today: date = None) -> list:
         if not val.strip():
             red(fld, f"{fld} mancante")
             continue
-        reason = _implausible_name(val)
+        reason = implausible_name(val)
         if reason:
             red(fld, f"{fld} non sembra un nome di persona ({reason}): {val!r}")
         elif len(val) > WIDTHS[fld]:

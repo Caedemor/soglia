@@ -64,9 +64,15 @@ def test_artifact():
     assert "unrecognized" not in build_pms_csv(res.guests, with_unrec)
     assert "Totale: 47" not in build_pms_csv(res.guests, with_unrec)
 
-    # red guests are still bookings: polish's guard-red drivers appear
-    polish_csv = build_pms_csv(parse_polish(), [])
-    assert any(l.startswith("guest,") and "Driver" in l
+    # red guests are still bookings. Polish's Driver rows are unrecognized
+    # stays now (the floor), so the fixture moves to its skip-flagged legend
+    # rows: still guests, still RED via skip_flag, still in the artifact.
+    polish = parse_polish()
+    flagged = [g for g in polish if g.skip_flag]
+    assert flagged and not any(is_submittable(g) for g in flagged), \
+        "fixture drift: the skip-flagged rows should be red"
+    polish_csv = build_pms_csv(polish, [])
+    assert any(l.startswith("guest,") and flagged[0].cognome in l
                for l in polish_csv.split("\n")), \
         "a named-but-red guest is still a real booking on the logistics lens"
     print("PASS artifact: header + 23 guests + 9 held (park), deterministic; "
@@ -178,7 +184,7 @@ def test_junk_loud_and_alloggiati():
     polish = parse_polish()
     c, vid = _fresh(polish)
     delta = pms_delta(c, vid)
-    assert len(delta) == 55, "ALL persisted guests count (plan §6a)"
+    assert len(delta) == 53, "ALL persisted guests count (plan §6a)"
     flagged = [g for _, g in delta if g.skip_flag]
     reds = [g for _, g in delta if not is_submittable(g)]
     assert len(flagged) == 7 and reds, \

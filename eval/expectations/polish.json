@@ -46,12 +46,11 @@
   "Bąk Rafał",
   "Bąk Justyna",
   "Kula Zdzisław Ryszard",
-  "Kula Bożena Halina",
-  "Driver 1",
-  "Driver 2"
+  "Kula Bożena Halina"
  ],
  "held_pax_total": 0,
  "junk_rows": 7,
+ "unrecognized_rows": 2,
  "field_coverage": {
   "sesso": 0,
   "data_nascita": 46,
@@ -60,6 +59,6 @@
   "numero_documento": 0
  },
  "required_fields": [],
- "completeness": "complete",
- "notes": "bootstrapped from the pinned hand parse (PLAN-eval-harness §7); future lists: hand-authored from the document itself."
+ "completeness": "awaiting_completion",
+ "notes": "bootstrapped from the pinned hand parse (PLAN-eval-harness §7); the two 'Driver N' rows are NOT persons — they are count-less placeholder labels and land as unrecognized stays (PLAN-eval-hygiene-and-floor B3/A7); future lists: hand-authored from the document itself."
 }

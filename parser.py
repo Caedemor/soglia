@@ -22,6 +22,7 @@ from typing import Callable, Optional
 
 from tracciato import Guest
 from stay import Stay, held_pax
+from validate import implausible_name    # acyclic: validate imports only tracciato
 
 # ---- normalizers: tiny, format-only transforms a map can request -----------
 
@@ -47,6 +48,42 @@ def norm_dotted_date(v: str) -> str:
                 return f"{int(d):02d}/{int(m):02d}/{y}"
     return v   # leave anything unexpected untouched; validation will judge it
 
+def norm_ymd_date(v: str) -> str:
+    """Year-FIRST dates: '1989.02.04' / '1989-02-04' / '1989/02/04' -> '04/02/1989'.
+
+    Year-first BY DECLARATION — stage 1 says which layout a column uses; this
+    code never sniffs a locale and never reorders on a guess. (The dd/mm vs
+    mm/dd question for `dotted_date` is likewise stage 1's to declare: a wrong
+    declaration surfaces as an implausible date in review, never as a silent
+    reinterpretation.) A 2-digit year is returned VERBATIM, same never-invent
+    rule as `dotted_date`; anything unrecognized is returned untouched."""
+    v = v.strip()
+    if not v:
+        return ""
+    for sep in (".", "/", "-"):
+        if sep in v:
+            parts = [p for p in v.split(sep) if p != ""]
+            if len(parts) == 3:
+                y, m, d = parts
+                if not (y.isdigit() and m.isdigit() and d.isdigit()):
+                    return v
+                if len(y) != 4:      # 2-digit year -> never invent a century
+                    return v
+                return f"{int(d):02d}/{int(m):02d}/{y}"
+    return v
+
+def norm_sex_mf(v: str) -> str:
+    """m/f/male/female/maschio/femmina -> '1'/'2' (the Alloggiati codes).
+
+    Anything else is left VERBATIM for the validator to red — an unrecognized
+    sex marker is a human's call, never a coin flip."""
+    key = v.strip().casefold()
+    if key in ("m", "male", "maschio"):
+        return "1"
+    if key in ("f", "female", "femmina"):
+        return "2"
+    return v.strip()
+
 def norm_doc_type_passport(v: str) -> str:
     """A passport-number column also tells us the document TYPE: passport when present."""
     return "PASOR" if v.strip() else ""
@@ -54,6 +91,8 @@ def norm_doc_type_passport(v: str) -> str:
 NORMALIZERS = {
     "passthrough": norm_passthrough,
     "dotted_date": norm_dotted_date,
+    "ymd_date": norm_ymd_date,
+    "sex_mf": norm_sex_mf,
     "doc_type_passport": norm_doc_type_passport,
 }
 
@@ -111,7 +150,15 @@ def _value(row: list, rule: FieldRule) -> str:
         return rule.const
     if rule.column is None or rule.column >= len(row):
         return ""
-    return NORMALIZERS[rule.normalizer](row[rule.column])
+    raw = row[rule.column]
+    try:
+        return NORMALIZERS[rule.normalizer](raw)
+    except Exception:
+        # A normalizer must NEVER abort a transcription. Real lists put prose
+        # in date columns ("reserved 2 rooms till 10/07/2026"); before this
+        # guard that raised and killed the whole list. Hand back the RAW cell —
+        # verbatim, never invented — and let the validator red it.
+        return raw.strip() if isinstance(raw, str) else str(raw).strip()
 
 
 CANON_FIELDS = ("sesso", "data_nascita", "comune_nascita", "provincia_nascita",
@@ -122,7 +169,7 @@ CANON_FIELDS = ("sesso", "data_nascita", "comune_nascita", "provincia_nascita",
 def _transcribe_row(row: list, cmap: ColumnMap, *, stay_id, source_row):
     """One raw row -> (guests, stay_or_None), per the map.
 
-    Dispatch, in order (the five dispositions):
+    Dispatch, in order (the dispositions):
       1. every cell empty           -> ([], None)          true blank
       2. no filled name slot, some cell filled -> RESIDUE (the floor):
          a. held vocabulary with a count ("+ 2 autisti")
@@ -142,6 +189,12 @@ def _transcribe_row(row: list, cmap: ColumnMap, *, stay_id, source_row):
          unreviewably (§8.5.7). A MIXED row (real name + placeholder slot) is
          NOT held — it falls through to guests and the name-plausibility guard
          reds the placeholder slot: ambiguity goes to a human, never arithmetic.
+      3b. EVERY filled slot is an implausible LABEL, with no count to hold
+         ("Driver 1", "TBD", "names pending")
+                                    -> ([], `unrecognized` Stay, pax 0)
+         no person is in this row. Verbatim kept, completeness BLOCKED until a
+         human looks — strictly stronger than emitting a phantom guest for the
+         guard to red. Mixed rows are untouched (see 3).
       4. otherwise                  -> (guests, named Stay) one Stay per row;
          a park-style twin = one Stay + two Guests linked by stay_id. A map's
          skip_row stays a REVIEW HINT, not a delete: a matched row that still
@@ -176,6 +229,23 @@ def _transcribe_row(row: list, cmap: ColumnMap, *, stay_id, source_row):
             stay_id=stay_id,
             pax_expected=len(cmap.name_slots),        # slot capacity, NOT text-N
             status="names_pending",
+            verbatim=" | ".join(f"{s} {n}".strip() for s, n in filled),
+            source_row=source_row,
+        )
+
+    # 3b — the count-less placeholder floor. Every filled slot is an
+    # implausible LABEL ("Driver 1", "TBD", "names pending"): there is no
+    # person here, and no count to hold either. Emitting it as a guest made a
+    # phantom the guard had to red row-by-row; an `unrecognized` stay is
+    # strictly stronger — verbatim kept, and completeness BLOCKED until a
+    # human looks. A MIXED row (real name + placeholder slot) is untouched:
+    # it still emits guests and the guard reds the placeholder slot, because
+    # ambiguity goes to a human, never to arithmetic.
+    if all(implausible_name(f"{s} {n}".strip()) is not None for s, n in filled):
+        return [], Stay(
+            stay_id=stay_id,
+            pax_expected=0,
+            status="unrecognized",
             verbatim=" | ".join(f"{s} {n}".strip() for s, n in filled),
             source_row=source_row,
         )

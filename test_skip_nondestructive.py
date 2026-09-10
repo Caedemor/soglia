@@ -21,7 +21,8 @@ import dataclasses
 
 from llm_parser import SKIP_RULES
 from maps import (read_docx_rows, read_xlsx_rows, MIX18_DOCX, PARK_XLSX,
-                  MIX18_MAP, PARK_MAP, parse_mix18, parse_polish, parse_park)
+                  POLISH_XLSX, MIX18_MAP, PARK_MAP, POLISH_MAP,
+                  parse_mix18, parse_polish, parse_park)
 from parser import transcribe, transcribe_report, transcribe_with_stays
 from validate import validate_guest, is_submittable
 
@@ -76,16 +77,22 @@ def test_legitimate_skips_flag_only_nonguests():
     assert all(g.stay_id not in held_ids for g in res.guests), \
         "no guest may sit on a held stay"
 
-    # polish: 7 header/legend rows flagged; the 48 numbered guests untouched
+    # polish: 7 header/legend rows flagged; the 46 numbered guests untouched
     polish = parse_polish()
     p_flagged = [g for g in polish if g.skip_flag]
     p_real = [g for g in polish if not g.skip_flag]
-    assert len(p_real) == 48, f"polish real guests changed: {len(p_real)}"
+    assert len(p_real) == 46, f"polish real guests changed: {len(p_real)}"
     assert len(p_flagged) == 7, f"expected 7 header/legend rows flagged, got {len(p_flagged)}"
-    # the 2 'Driver N' rows are numbered real-ish rows — caught by the name guard,
-    # NOT by the skip rule, so they must carry no skip_flag.
-    drivers = [g for g in polish if g.cognome.lower().startswith("driver")]
-    assert len(drivers) == 2 and all(not g.skip_flag for g in drivers)
+    # The 7 legend rows keep emit-and-flag: they read as plausible labels
+    # ("SGL", "No. of rooms / people"), so the floor leaves them alone and the
+    # skip rule surfaces them. The 2 'Driver N' rows are the opposite case —
+    # implausible LABELS with no count, so disposition 3b takes them out of
+    # the guest list entirely rather than emitting phantoms to be redded.
+    assert not [g for g in polish if g.cognome.lower().startswith("driver")], \
+        "a count-less placeholder must not reach the guest list"
+    p_stays = transcribe_with_stays(read_xlsx_rows(POLISH_XLSX), POLISH_MAP)
+    assert sorted(s.verbatim for s in p_stays.stays
+                  if s.status == "unrecognized") == ["Driver 1", "Driver 2"]
     print("PASS (b) legitimate skips flag only non-guest rows; 0 real guests skip-flagged")
 
 

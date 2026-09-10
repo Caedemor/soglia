@@ -165,7 +165,7 @@ def test_replay_corpus_pin():
     park = card["lists"]["park"]["runs"][0]["soft"]
     assert (park["guests"], park["held_pax"]) == (23, 18)
     polish = card["lists"]["polish"]["runs"][0]["soft"]
-    assert polish["matched"] == 48, \
+    assert polish["matched"] == 46, \
         "every real person, whatever the junk disposition (rev5 §7)"
     assert card["lists"]["mix18"]["handmap_parity"] == [True]
     assert card["lists"]["park"]["handmap_parity"] == [True]
