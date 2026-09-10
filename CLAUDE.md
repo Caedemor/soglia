@@ -10,6 +10,9 @@ downstream, human review in the middle. Pure Python, plain-`assert` tests.
 ./run_tests.sh        # builds the golden file, runs all 15 suites, prints ALL GREEN (15/15)
 ```
 Never edit a `.py` and assume it works — run this. All 15 must stay green.
+(The eval-hygiene cycle added no suite: its new tests went into the existing
+`test_parser`, `test_stay`, `test_name_plausibility` and `test_eval_harness`,
+so the count surfaces needed no sweep.)
 
 ## The one architectural rule, never break it
 The LLM touches data exactly once, at the boundary (messy doc → a `ColumnMap`).
@@ -32,9 +35,11 @@ final file, never picks a code-table code, never talks to the portal.
 ## File map
 - `tracciato.py` — 168-char Alloggiati formatter + `Guest`. Golden-file tested.
 - `validate.py` — the red-issue gate (`is_submittable`).
-- `parser.py` — generalized stage-2 transcriber (map-driven; five-way row
-  dispatch: guests / held Stays / emit-and-flag / `unrecognized` residue /
-  true blank).
+- `parser.py` — generalized stage-2 transcriber (map-driven; row dispatch:
+  guests / held Stays / emit-and-flag / `unrecognized` residue AND count-less
+  placeholder labels / true blank). Normalizers: `passthrough`, `dotted_date`,
+  `ymd_date` (year-first), `sex_mf`, `doc_type_passport` — a raising
+  normalizer degrades to the verbatim cell, never aborting a transcription.
 - `stay.py` — `Stay` entity, deterministic held-capacity recognizer
   (`held_pax`), `reconcile()` + `completeness_status()` (override-aware, §8.5.1/§8.5.2) +
   `derive_status()` (the supplement counter rule).
@@ -71,13 +76,14 @@ final file, never picks a code-table code, never talks to the portal.
   inspiration, not spec), export buttons over the commit-2/4 machinery,
   the wrapper.
 - **Stage 1 has been RUN LIVE on all four dev lists and passes the eval
-  gates** — but be precise about what that measures: the gates cover person
-  recall, held arithmetic and the engine path; they do **not** yet measure
-  field-level extraction accuracy (dates, document numbers, sex).
-  `required_fields` is empty on every list and the expectations were
-  bootstrapped from our own parsers, so a scorecard PASS is a **no-regression**
-  signal, not an accuracy measurement — full reasoning in
-  [docs/eval-audit-2026-09-10.md](docs/eval-audit-2026-09-10.md).
+  gates** — but be precise about what that measures. The gates cover person
+  recall, held arithmetic, the engine path, and — since the hand labels were
+  wired in — EXACT field values wherever a human has labelled them, which
+  today means textmail's `data_nascita` + `numero_documento` only. For
+  mix18/polish/park the expectations carry names bootstrapped from our own
+  parsers and no field values, so on those three a scorecard PASS remains a
+  **no-regression** signal rather than an accuracy measurement — full
+  reasoning in [docs/eval-audit-2026-09-10.md](docs/eval-audit-2026-09-10.md).
   What the live runs did establish (checkpoint re-measure + same-day closing
   battery,
   2026-07-04: every live run's map reproduces the hand-map guests on mix18 and
@@ -138,25 +144,16 @@ final file, never picks a code-table code, never talks to the portal.
   review-visible held stays, never silent ones. Ships as one commit: stage-1
   prompt + ALL fixtures + a hand-authored `llm_maps/textmail.json`. The
   dispatch floor stays the guarantee underneath.
-- **Polish "Driver N" rows:** decide whether guard-red placeholder guests
-  should become held pax-1 stays (polish currently reads complete-with-reds:
-  the completeness axis says done while 2 drivers are unnamed; the red gate is
-  what blocks it today). Moves polish counts across four suites — needs its
-  own blast radius.
-- **Eval hygiene — from the audit** (full record:
-  [docs/eval-audit-2026-09-10.md](docs/eval-audit-2026-09-10.md)):
-  `required_fields` is `[]` on all four lists, so no gate asserts anything
-  about dates, document numbers or sex; `labels/` holds the only
-  independently hand-authored ground truth and the harness does not read it
-  (wiring it in is the next eval task); `guard_path` code-enforces only
-  `real-data/`, while the tracked `holdout test data/` is protected by
-  convention alone — extending the guard is cheap hardening.
-- **Eval harness fixups, queued non-blocking** (raised at the 2026-07-08
-  review): broaden `evaluate_run`'s crash guard so a wrong-typed-but-compiling
-  map yields a verdict instead of killing a campaign mid-run; add a retry
-  wrapper for transient API errors (a 529 killed the first inaugural attempt);
-  exclude `review_notes` prose from the stability hash so genuine instability
-  stands out.
+- **Hand-label mix18 / polish / park from the documents.** textmail now
+  carries per-person `data_nascita` + `numero_documento` in
+  `eval/expectations/` and GATES on them; the other three carry names only, so
+  field accuracy is unmeasured there. They must be labelled by reading the
+  documents — never bootstrapped from the parser, which is the no-regression
+  trap [docs/eval-audit-2026-09-10.md](docs/eval-audit-2026-09-10.md) named.
+- **Promote `unrecognized_rows` to a hard gate** once a SECOND list carries
+  residue rows. With only polish's two Driver rows in the corpus a gate would
+  be pinned to one list's shape, so it is reported as a soft metric for now
+  (PLAN-eval-hygiene-and-floor §9).
 
 ## Collaboration protocol (how this repo is actually worked)
 
@@ -208,3 +205,4 @@ Process rules (each paid for at least once):
 
 ## Style
 No pytest, no frameworks added without asking. Small, plain, testable functions. Keep commits small and run `./run_tests.sh` before each.
+Synthetic fixture names must pass the name-plausibility guard (no digits, no placeholder tokens) — a name the guard rejects is not a person to the engine, so such a fixture tests a shape the product does not have.

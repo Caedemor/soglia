@@ -32,17 +32,20 @@ TSV paste = 47 (+1 held trailer: 2 drivers pending).
 
 ## The one honest caveat
 The "AI" half of the product — stage 1, where a live model reads a messy document
-and produces the column map — HAS run live against the model on three of the four
-sample lists, and the deterministic layers proved they catch what it misses (the
-record: docs/handoff-rev5.md §2 and §7). The remaining unknown is **breadth**:
-four dev lists are not the ~20-list eval set, the text-mail list has never been
-through stage 1, and the production model/provider choice is deliberately open.
+and produces the column map — HAS run live against the model on all four sample
+lists, and the deterministic layers proved they catch what it misses (the
+record: docs/handoff-rev5.md §2, §7 and §8). Two unknowns remain: **breadth**
+(four dev lists are not the ~20-list eval set, and the production
+model/provider choice is deliberately open) and **depth** — field-level
+extraction accuracy is only gated where a human has hand-labelled the values,
+which so far means the text-mail list alone. See docs/eval-audit-2026-09-10.md.
 
 ## What to do now, in Claude Code
 1. Open this folder in Claude Code (desktop app, Code tab — no terminal needed).
 2. First message:
    *"Initialize a git repository here, make the first commit, then run ./run_tests.sh and show me the result."*
-   (If you also created a GitHub account: add *"...then create a private GitHub repo and push it."*)
+   (If you also created a GitHub account: add *"...then create a GitHub repo and push it."* —
+   confirm the repo is private before pushing anything.)
 3. Confirm 15/15 green. Now you have a versioned, backed-up baseline — the thing
    that makes the rot above impossible to repeat.
 4. (Done — steps 1–3 and the first live-model comparison are history; the repo
