@@ -1,0 +1,436 @@
+{
+ "lists": {
+  "mix18": {
+   "fail_detail": [],
+   "gates": {
+    "engine_path": true,
+    "held_arithmetic": true,
+    "map_valid": true,
+    "recall": true
+   },
+   "handmap_parity": [
+    true,
+    true
+   ],
+   "passed": true,
+   "runs": [
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true
+     },
+     "soft": {
+      "completeness": "complete",
+      "default_role": "20",
+      "extras": 0,
+      "field_accuracy": {},
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 37,
+       "numero_documento": 36,
+       "sesso": 0,
+       "tipo_documento": 36
+      },
+      "flagged": 0,
+      "guests": 39,
+      "held_pax": 0,
+      "matched": 39,
+      "review_notes": [
+       "Row 1 (\u2116=1, \u0422\u043a\u0430\u0447\u0435\u043d\u043a\u043e \u0406\u0440\u0438\u043d\u0430) has 'TOUR-LEADER' in column 7 (order number field) \u2014 treated as group leader (role 18); human should confirm this is the correct role mapping.",
+       "Row 1 has an empty passport field (column 5) \u2014 no documento will be produced for this guest; human must supply passport or ID details.",
+       "The list is missing: sesso (no gender column present \u2014 all guests must be assumed or verified manually).",
+       "The list is missing: comune_nascita, provincia_nascita, stato_nascita, cittadinanza, luogo_rilascio \u2014 none of these fields appear in the source table and must be supplied externally.",
+       "Name order is ambiguous for some rows: most data-rows appear to be SURNAME FIRSTNAME (e.g. KOVALCHUK IRYNA), but row 1 '\u0422\u043a\u0430\u0447\u0435\u043d\u043a\u043e \u0406\u0440\u0438\u043d\u0430' is in Cyrillic and may follow SURNAME FIRSTNAME convention \u2014 verify transliteration and order.",
+       "Column 6 ('\u041d\u043e\u043c\u0435\u0440') contains room assignments (e.g. TWIN 1, SGL 1) and is not mapped to any canonical field; it may be useful for room-allocation but is not an Alloggiati field.",
+       "Column 7 ('\u2116**** ****\u0437\u0430\u043c\u043e\u0432\u043b\u0435\u043d\u043d\u044f') appears to be a booking/order number; it is not mapped to any canonical field except for the TOUR-LEADER role marker in row 1.",
+       "Column 8 ('\u0425\u0430\u0440\u0447\u0443\u0432.') contains meal-plan codes (BB = Bed & Breakfast); not a canonical Alloggiati field \u2014 ignored.",
+       "Column 9 ('VIP') is empty for all rows; ignored.",
+       "Several guests share the same order number (column 7), suggesting family/group room-sharing \u2014 room assignment logic should be verified.",
+       "Children are present (e.g. KOVALCHUK ARTEM born 17.09.2014, KOVALENKO MARIIA born 08.03.2014, etc.) \u2014 their role codes may need to differ from adults depending on Alloggiati rules; currently all default to '20'.",
+       "Date format in source is DD.MM.YY (two-digit year, e.g. 12.06.26 for check-in) in columns 2\u20133; these are not mapped as canonical Alloggiati fields but the two-digit year should be expanded to 2026 if used.",
+       "Date of birth in column 4 uses DD.MM.YYYY (four-digit year) \u2014 dotted_date normalizer converts dots to slashes; verify final format matches Alloggiati submission requirements (DD/MM/YYYY)."
+      ],
+      "unrecognized": 0
+     }
+    },
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true
+     },
+     "soft": {
+      "completeness": "complete",
+      "default_role": "20",
+      "extras": 0,
+      "field_accuracy": {},
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 37,
+       "numero_documento": 36,
+       "sesso": 0,
+       "tipo_documento": 36
+      },
+      "flagged": 0,
+      "guests": 39,
+      "held_pax": 0,
+      "matched": 39,
+      "review_notes": [
+       "Row 1 (\u2116=1, '\u0422\u043a\u0430\u0447\u0435\u043d\u043a\u043e \u0406\u0440\u0438\u043d\u0430') has no passport number and order number 'TOUR-LEADER' \u2014 treated as capogruppo (role 18); human should confirm this mapping.",
+       "Column 7 ('\u2116**** ****\u0437\u0430\u043c\u043e\u0432\u043b\u0435\u043d\u043d\u044f') contains an order/booking reference, not a guest field; used only for role detection.",
+       "Name order is ambiguous: some names appear to be 'SURNAME FIRSTNAME' (all-caps rows) while mixed-case rows (e.g. '\u0422\u043a\u0430\u0447\u0435\u043d\u043a\u043e \u0406\u0440\u0438\u043d\u0430', 'Lebedynska Marharyta') may follow 'firstname_surname' \u2014 human should verify each case.",
+       "Fields missing from canonical list that are required for Alloggiati Web: sesso, comune_nascita, provincia_nascita, stato_nascita, cittadinanza, luogo_rilascio \u2014 none of these are present in the source table and must be supplied manually or via a default mapping.",
+       "Column 9 ('VIP') is always empty in provided data; no mapping attempted.",
+       "Column 8 ('\u0425\u0430\u0440\u0447\u0443\u0432.' / meal plan) is not a canonical field; ignored.",
+       "Column 6 ('\u041d\u043e\u043c\u0435\u0440' / room number) is not a canonical field; ignored.",
+       "Passport column (5) is empty for row 1 (tour leader); tipo_documento and numero_documento will be blank for that row.",
+       "Some guests share the same order number (column 7), indicating family/shared-room groupings \u2014 may be useful for role assignment review.",
+       "Children identified by birth year (e.g. 2014, 2018, 2017) should have role checked; Alloggiati may require role '19' (minore) rather than '20'."
+      ],
+      "unrecognized": 0
+     }
+    }
+   ],
+   "stability": {
+    "identical_outcomes": true,
+    "runs": 2
+   }
+  },
+  "park": {
+   "fail_detail": [],
+   "gates": {
+    "engine_path": true,
+    "held_arithmetic": true,
+    "map_valid": true,
+    "recall": true
+   },
+   "handmap_parity": [
+    true,
+    true
+   ],
+   "passed": true,
+   "runs": [
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true
+     },
+     "soft": {
+      "completeness": "awaiting_completion",
+      "default_role": "20",
+      "extras": 0,
+      "field_accuracy": {},
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 0,
+       "numero_documento": 0,
+       "sesso": 0,
+       "tipo_documento": 0
+      },
+      "flagged": 0,
+      "guests": 23,
+      "held_pax": 18,
+      "matched": 23,
+      "review_notes": [
+       "None of the canonical fields (sesso, data_nascita, comune_nascita, provincia_nascita, stato_nascita, cittadinanza, tipo_documento, numero_documento, luogo_rilascio) are present in this rooming list \u2014 the list contains only logistical/hotel fields. All canonical fields are omitted.",
+       "Row 0 appears to be a numeric summary row (counts: 15 SGL, 0 DUS, 13 TWIN, 41 PAX, 28 Notti, 41 Pernotti) rather than a header or data row \u2014 it has been counted as part of the 2 header rows to skip.",
+       "Column 18 (Cognome 2) and column 19 (Nome 2) are only populated for TWIN rooms sharing two guests; second-person name slot should only be emitted when those cells are non-empty.",
+       "Column 20 (Parcheggio) contains vehicle/parking notes (e.g. '1 auto', '1 furgone con carrello') \u2014 not a canonical field but may be useful for voucher generation.",
+       "Column 21 (Varie per voucher) contains miscellaneous voucher notes (e.g. 'CELIACA') \u2014 not a canonical field but should be reviewed for special guest requirements.",
+       "Column 0 (Gruppo) contains group/role labels such as 'Area tecnica arrivi', 'Quartiertappa 1', 'Radioinformazioni arrivi' \u2014 these may imply different Alloggiati role codes but no explicit mapping rule is provided; all defaulted to '20' (membro gruppo).",
+       "No guest role distinguishing capogruppo (18) from membro (20) is discernible from the data alone; a human should verify whether any guest should be coded as capogruppo (18).",
+       "Room type is spread across columns 8 (SGL), 9 (DUS), 10 (TWIN) as flags rather than a single column \u2014 room type cannot be mapped to a single canonical column.",
+       "Hotel category (column 3) uses Italian star notation (e.g. '3*') \u2014 may need normalisation for Alloggiati Web submission.",
+       "Check-in (column 12) and check-out (column 13) dates are in DD/MM/YYYY format \u2014 already in Italian standard format, no normaliser needed, but they are not canonical Alloggiati fields and are omitted from field mapping."
+      ],
+      "unrecognized": 0
+     }
+    },
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true
+     },
+     "soft": {
+      "completeness": "awaiting_completion",
+      "default_role": "20",
+      "extras": 0,
+      "field_accuracy": {},
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 0,
+       "numero_documento": 0,
+       "sesso": 0,
+       "tipo_documento": 0
+      },
+      "flagged": 0,
+      "guests": 23,
+      "held_pax": 18,
+      "matched": 23,
+      "review_notes": [
+       "No canonical fields (sesso, data_nascita, comune_nascita, etc.) are present in this rooming list \u2014 the list contains only hotel/logistical data.",
+       "Row 0 appears to be a summary/totals row with numeric values in columns 8 (15), 9 (0), 10 (13), 11 (41), 14 (28), 15 (41); it should be skipped along with the header row.",
+       "header_rows set to 2 to skip both the summary row (row 0) and the column-label row (row 1).",
+       "Column 20 (Parcheggio) contains parking info (e.g. '1 auto', '1 furgone con carrello') \u2014 not a canonical field but may be relevant for voucher notes.",
+       "Column 21 (Varie per voucher) contains misc voucher notes (e.g. 'CELIACA') \u2014 not a canonical field but should be reviewed for dietary/special requirements.",
+       "Second person slot (columns 18-19) is only populated for TWIN rooms (column 10 = 1); single rooms leave Cognome2/Nome2 empty \u2014 skip logic on column 16 may not be sufficient, also need to skip name_slot 2 when column 18 is empty.",
+       "No document type, document number, birth date, sex, nationality, or place of birth columns are present \u2014 Alloggiati Web upload will require these fields to be collected separately or filled manually.",
+       "default_role set to '20' (membro gruppo) based on 'Gruppo' column (col 0) groupings; no explicit role column exists to distinguish capo gruppo ('17') from members ('20') \u2014 human review required to identify group leaders.",
+       "Column 7 (Tratt./board basis) is 'HBB' throughout \u2014 not a canonical field but useful for voucher generation.",
+       "Column 0 (Gruppo) contains group names ('Area tecnica arrivi', 'Quartiertappa 1', 'Radioinformazioni arrivi') which may imply different roles or sub-groups \u2014 human review recommended."
+      ],
+      "unrecognized": 0
+     }
+    }
+   ],
+   "stability": {
+    "identical_outcomes": true,
+    "runs": 2
+   }
+  },
+  "polish": {
+   "fail_detail": [],
+   "gates": {
+    "engine_path": true,
+    "held_arithmetic": true,
+    "map_valid": true,
+    "recall": true
+   },
+   "handmap_parity": [
+    false,
+    false
+   ],
+   "passed": true,
+   "runs": [
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true
+     },
+     "soft": {
+      "completeness": "awaiting_completion",
+      "default_role": "20",
+      "extras": 6,
+      "field_accuracy": {},
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 46,
+       "numero_documento": 0,
+       "sesso": 0,
+       "tipo_documento": 0
+      },
+      "flagged": 6,
+      "guests": 52,
+      "held_pax": 0,
+      "matched": 46,
+      "review_notes": [
+       "Row index 2 (No.1): Last Name cell is 'GUIDE NOWAK' \u2014 contains role prefix 'GUIDE'; this person is likely the tour guide (Alloggiati role '17' capo gruppo or similar) and should be reviewed manually.",
+       "Row index 3 (No.2): Last Name cell is 'Ks. KOWALCZYK' \u2014 'Ks.' is a Polish honorific for a Catholic priest; surname should be extracted as 'KOWALCZYK' and the prefix stripped; role may differ.",
+       "No 'sesso' (sex) column present in the source data \u2014 field cannot be mapped and must be entered manually or inferred.",
+       "No 'comune_nascita', 'provincia_nascita', 'stato_nascita' columns present \u2014 birth place fields are missing entirely.",
+       "No 'cittadinanza' (citizenship/nationality) column present.",
+       "No 'tipo_documento', 'numero_documento', or 'luogo_rilascio' columns present \u2014 document fields are entirely absent.",
+       "Column index 4 ('ROOMING LIST') contains room-type codes (SGL, DBL, TWN) which are not Alloggiati canonical fields; ignored for mapping but may be useful for room assignment logic.",
+       "Rows 3\u20134 (Mazur), 5\u20136 (Kowalski/Kowalska), 7\u20138 (W\u00d3JCIK), 9\u201310 (Wi\u015bniewski/Wi\u015bniewska), 11\u201312 (Krawczyk), 13\u201314 (Kaczmarek), 17\u201318 (D\u0105browski) appear to be sharing DBL rooms \u2014 likely couples; pairing is implicit via consecutive rows and shared surname, not encoded structurally.",
+       "Rows 15\u201316 (Sikora, Zaj\u0105c) share a TWN room but have different surnames \u2014 relationship is unclear.",
+       "The duplicate header row (rows 0 and 1 are identical) confirms header_rows=2 but is unusual; verify no data row was accidentally repeated.",
+       "Date format in column 3 appears to be DD/MM/YYYY already; 'dotted_date' normalizer is set as a no-op passthrough for slash-delimited dates \u2014 confirm actual separator used in source is '/' not '.'.",
+       "No capo gruppo / group leader role column exists; role differentiation (guide vs. group member) must be handled manually based on the 'GUIDE' prefix in the name cell."
+      ],
+      "unrecognized": 2,
+      "unrecognized_expected": 2
+     }
+    },
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true
+     },
+     "soft": {
+      "completeness": "awaiting_completion",
+      "default_role": "20",
+      "extras": 6,
+      "field_accuracy": {},
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 46,
+       "numero_documento": 0,
+       "sesso": 0,
+       "tipo_documento": 0
+      },
+      "flagged": 6,
+      "guests": 52,
+      "held_pax": 0,
+      "matched": 46,
+      "review_notes": [
+       "Row index 2 (No.=1): Last Name cell is 'GUIDE NOWAK' \u2014 contains role prefix 'GUIDE'; the actual surname appears to be NOWAK. A human must strip the prefix and assign the guide role (likely code '17' capo gruppo or similar) manually.",
+       "Row index 3 (No.=2): Last Name cell is 'Ks. KOWALCZYK' \u2014 'Ks.' is a Polish honorific for a Catholic priest (Ksi\u0105dz). Actual surname is KOWALCZYK. Prefix must be stripped; no special Alloggiati role code is defined here but a human should confirm.",
+       "ROOMING LIST column (col 4) contains room-type codes (SGL, DBL, TWN), not a canonical Alloggiati field \u2014 no mapping applied, but a human may wish to use it to pair DBL/TWN guests into the same room.",
+       "No 'sesso' (sex) column is present in the list \u2014 gender cannot be determined from the data provided.",
+       "No document fields (tipo_documento, numero_documento, luogo_rilascio) are present in the list.",
+       "No comune_nascita, provincia_nascita, stato_nascita, or cittadinanza columns are present.",
+       "DBL/TWN pairs (rows sharing the same surname and consecutive numbers) likely share a room; pairing logic must be implemented externally.",
+       "Header row appears duplicated (rows 0 and 1 are identical) \u2014 header_rows set to 2 to skip both.",
+       "Some first-name cells contain multiple given names (e.g. 'Tomasz Grzegorz', 'Magdalena Renata') \u2014 passthrough will preserve them; verify whether the destination system accepts compound first names.",
+       "Date format in source is DD/MM/YYYY with '/' separators; dotted_date normalizer is a no-op here but applied for safety. Verify no rows use dot separators."
+      ],
+      "unrecognized": 2,
+      "unrecognized_expected": 2
+     }
+    }
+   ],
+   "stability": {
+    "identical_outcomes": true,
+    "runs": 2
+   }
+  },
+  "textmail": {
+   "fail_detail": [],
+   "gates": {
+    "engine_path": true,
+    "held_arithmetic": true,
+    "map_valid": true,
+    "recall": true,
+    "required_fields": true
+   },
+   "handmap_parity": [
+    true,
+    true
+   ],
+   "passed": true,
+   "runs": [
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true,
+      "required_fields": true,
+      "required_fields_detail": {
+       "data_nascita": "47/47 of 47",
+       "numero_documento": "46/46 of 47"
+      }
+     },
+     "soft": {
+      "completeness": "awaiting_completion",
+      "default_role": "16",
+      "extras": 0,
+      "field_accuracy": {
+       "data_nascita": {
+        "exact": 47,
+        "of": 47
+       },
+       "numero_documento": {
+        "exact": 46,
+        "of": 46
+       }
+      },
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 47,
+       "numero_documento": 46,
+       "sesso": 0,
+       "tipo_documento": 0
+      },
+      "flagged": 0,
+      "guests": 47,
+      "held_pax": 2,
+      "matched": 47,
+      "review_notes": [
+       "sesso is not present in the data \u2014 must be supplied externally or inferred; canonical field omitted.",
+       "comune_nascita, provincia_nascita, stato_nascita, cittadinanza, tipo_documento, luogo_rilascio are all absent from the list \u2014 required Alloggiati fields must be filled in manually or from another source.",
+       "Row 0 (index 0): firstname cell is 'Ks. Tomasz' \u2014 'Ks.' is a Polish honorific (Ksi\u0105dz = Catholic priest/reverend) embedded in the firstname field; a human should confirm the actual first name is 'Tomasz' and strip the honorific before submission.",
+       "Document numbers in column 4 have varying formats (e.g. 'KPT 837261', 'GK 7261054', 'MZ 5093412', 'RW 6082735') \u2014 some appear to be 2-letter prefix IDs rather than standard passport/ID formats; tipo_documento and luogo_rilascio cannot be determined from data alone.",
+       "doc_type_passport normalizer not applied to column 4 because documento type is ambiguous (mixed ID/passport series) \u2014 human review required to classify each document type.",
+       "No group/role marker column detected; default_role set to '16' (ospite singolo) but this should be verified if guests are part of a group.",
+       "Date in row 18 (index 18): '18/04/2013' yields a guest born in 2013 \u2014 likely a minor; flag for age-appropriate handling in Alloggiati Web.",
+       "No sex column present; sex_mf normalizer unused."
+      ],
+      "unrecognized": 0
+     }
+    },
+    {
+     "gates": {
+      "engine_path": true,
+      "held_arithmetic": true,
+      "map_valid": true,
+      "recall": true,
+      "required_fields": true,
+      "required_fields_detail": {
+       "data_nascita": "47/47 of 47",
+       "numero_documento": "46/46 of 47"
+      }
+     },
+     "soft": {
+      "completeness": "awaiting_completion",
+      "default_role": "16",
+      "extras": 0,
+      "field_accuracy": {
+       "data_nascita": {
+        "exact": 47,
+        "of": 47
+       },
+       "numero_documento": {
+        "exact": 46,
+        "of": 46
+       }
+      },
+      "field_coverage": {
+       "cittadinanza": 0,
+       "data_nascita": 47,
+       "numero_documento": 46,
+       "sesso": 0,
+       "tipo_documento": 0
+      },
+      "flagged": 0,
+      "guests": 47,
+      "held_pax": 2,
+      "matched": 47,
+      "review_notes": [
+       "Row 0 (Klimowicz, Ks. Tomasz): firstname cell contains honorific prefix 'Ks.' (Polish abbreviation for 'Ksi\u0105dz', i.e. Catholic priest). This may affect role classification or require name cleaning before submission.",
+       "No sesso column detected; sex must be determined externally or defaulted.",
+       "No comune_nascita, provincia_nascita, stato_nascita, or cittadinanza columns present; all required Italian Alloggiati fields are missing and must be supplied from another source.",
+       "No tipo_documento column detected; document type cannot be inferred from the document number format alone without applying doc_type_passport heuristic \u2014 document numbers vary in format (e.g. 'GK 7261054', 'MZ 5093412', 'RW 6082735' differ structurally from others) and may represent different document types. Human review required.",
+       "No luogo_rilascio column detected.",
+       "Row 18 (Bienias, Aleksandra, born 18/04/2013): date of birth indicates a minor (~11 years old). Role may need to be set differently (e.g. child accompanying adult).",
+       "All guests are currently defaulted to role '16' (ospite singolo). If any rows represent group members, role must be corrected manually.",
+       "Document number formats are inconsistent across rows, suggesting possible mix of passport and ID card numbers. A human should verify each document type."
+      ],
+      "unrecognized": 0
+     }
+    }
+   ],
+   "stability": {
+    "identical_outcomes": true,
+    "runs": 2
+   }
+  }
+ },
+ "meta": {
+  "date": "2026-09-10",
+  "label": "scorecard-2",
+  "live": true,
+  "runs_per_list": 2
+ },
+ "summary": {
+  "failed": [],
+  "passed": [
+   "mix18",
+   "polish",
+   "park",
+   "textmail"
+  ],
+  "verdict": "PASS"
+ }
+}
