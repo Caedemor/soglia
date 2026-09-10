@@ -70,8 +70,16 @@ final file, never picks a code-table code, never talks to the portal.
   bridging UI↔engine), the review UI + edit loop (the jsx mockup is
   inspiration, not spec), export buttons over the commit-2/4 machinery,
   the wrapper.
-- **Stage 1 IS validated live** on ALL FOUR dev lists (checkpoint re-measure +
-  same-day closing battery,
+- **Stage 1 has been RUN LIVE on all four dev lists and passes the eval
+  gates** — but be precise about what that measures: the gates cover person
+  recall, held arithmetic and the engine path; they do **not** yet measure
+  field-level extraction accuracy (dates, document numbers, sex).
+  `required_fields` is empty on every list and the expectations were
+  bootstrapped from our own parsers, so a scorecard PASS is a **no-regression**
+  signal, not an accuracy measurement — full reasoning in
+  [docs/eval-audit-2026-09-10.md](docs/eval-audit-2026-09-10.md).
+  What the live runs did establish (checkpoint re-measure + same-day closing
+  battery,
   2026-07-04: every live run's map reproduces the hand-map guests on mix18 and
   park — the dispatch floor absorbs park's missed held-row skip — and polish
   differs only by one junk header row the live map correctly treats as header;
@@ -135,6 +143,20 @@ final file, never picks a code-table code, never talks to the portal.
   the completeness axis says done while 2 drivers are unnamed; the red gate is
   what blocks it today). Moves polish counts across four suites — needs its
   own blast radius.
+- **Eval hygiene — from the audit** (full record:
+  [docs/eval-audit-2026-09-10.md](docs/eval-audit-2026-09-10.md)):
+  `required_fields` is `[]` on all four lists, so no gate asserts anything
+  about dates, document numbers or sex; `labels/` holds the only
+  independently hand-authored ground truth and the harness does not read it
+  (wiring it in is the next eval task); `guard_path` code-enforces only
+  `real-data/`, while the tracked `holdout test data/` is protected by
+  convention alone — extending the guard is cheap hardening.
+- **Eval harness fixups, queued non-blocking** (raised at the 2026-07-08
+  review): broaden `evaluate_run`'s crash guard so a wrong-typed-but-compiling
+  map yields a verdict instead of killing a campaign mid-run; add a retry
+  wrapper for transient API errors (a 529 killed the first inaugural attempt);
+  exclude `review_notes` prose from the stability hash so genuine instability
+  stands out.
 
 ## Collaboration protocol (how this repo is actually worked)
 
@@ -170,8 +192,11 @@ Process rules (each paid for at least once):
   wrong anchor must fail loudly, never skip silently.
 - Suite-count surfaces: `run_tests.sh` + this file ×3 + README_START_HERE
   ×2 + the README status — swept in the SAME commit as any suite add.
-- The user's machine: use `/usr/bin/git` (Homebrew git EPERMs there); a
-  background poller leaves stale `.git/index.lock` — remove it, move on.
+- The user's machine: the Homebrew-git EPERM problem is **retired**. It was
+  TCC protection on `~/Documents`, not a git bug; the repo moved to
+  `~/Projects/Soglia` (2026-09) and plain `git` works — `/usr/bin/git` is no
+  longer needed. If a stale `.git/index.lock` ever appears with no git
+  process holding it, remove it and move on.
 - The holdout (`real-data/`) is sealed for EVERYONE; the eval corpus is
   tuning data by definition and never includes it.
 - A fresh sandbox session: clone origin, read this file FULLY, then
