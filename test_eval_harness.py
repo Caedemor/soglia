@@ -14,7 +14,8 @@ What must hold:
   - a bad model answer is a VERDICT (map_invalid), never a crash;
   - the replay corpus (tracked fixtures) passes end-to-end and its known
     benign divergences land exactly where the battery measured them;
-  - real-data/ is refused (the holdout stays sealed);
+  - real-data/ AND 'holdout test data/' are refused (the holdout stays
+    sealed, in code rather than in prose);
   - scorecards are deterministic and render.
 
 Dev lists only; live runs belong to the machine with the key.

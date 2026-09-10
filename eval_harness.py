@@ -7,16 +7,22 @@ was perfect). Two verdict channels per list:
 
   HARD GATES (any failure -> the list FAILS, and a nonzero exit upstream):
     map_valid          the model's text compiles through parse_map_json
+    transcribe_ok      a compiling-but-wrong-typed map is a verdict on THIS
+                       list, never a crashed campaign
     recall             100% of expected persons found (token-multiset match)
     held_arithmetic    sum of held-stay pax == expected held total
-    required_fields    per-list dial (expectations key; DEFAULT EMPTY)
+    required_fields    per-list dial (DEFAULT EMPTY): 100% EXACT match on the
+                       listed fields, over the persons carrying a hand-labelled
+                       value. Gating a field nobody labelled FAILS rather than
+                       passing vacuously.
     engine_path        the FULL product runs green on the live output:
                        persist -> version_completeness -> PMS artifact ->
                        export -> confirm -> coverage 'full', delta empty
   SOFT METRICS (reported, never failing — the battery's benign-variance
   lesson, rev5 §8): junk disposition, default_role choice, field-coverage
   deltas, extras (junk-as-guest is emit-and-flag working), completeness
-  status, K-run stability.
+  status, field_accuracy, unrecognized-row count, and K-run stability (whose
+  hash excludes free model prose — see _STABILITY_EXCLUDE).
 
 Ground truth is a small human-authored EXPECTATIONS file per list
 (eval/expectations/<list>.json) — persons by name, held pax total, junk
