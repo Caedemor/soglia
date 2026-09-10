@@ -29,7 +29,7 @@ from llm_parser import replay_caller
 from maps import (parse_mix18, parse_polish, parse_park_stays,
                   read_docx_rows, read_xlsx_rows, read_text_rows,
                   MIX18_DOCX, POLISH_XLSX, PARK_XLSX, TEXTMAIL_TXT,
-                  TEXTMAIL_MAP)
+                  POLISH_MAP, TEXTMAIL_MAP)
 from parser import transcribe_with_stays
 from tracciato import Guest
 
@@ -63,7 +63,8 @@ def test_self_check_dev_corpus():
 
     cases = {
         "mix18": R(parse_mix18()),
-        "polish": R(parse_polish()),
+        "polish": transcribe_with_stays(read_xlsx_rows(POLISH_XLSX),
+                                        POLISH_MAP),
         "park": parse_park_stays(),
         "textmail": transcribe_with_stays(read_text_rows(TEXTMAIL_TXT),
                                           TEXTMAIL_MAP),

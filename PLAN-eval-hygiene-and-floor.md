@@ -226,6 +226,22 @@ speculative growth.
 
 ## 4. Blast radius, file by file
 
+**Commit 0 — preparatory fixtures** *(added during the build; see §5)*
+
+- `test_supplements.py`, `test_audit.py` — synthetic guest names carry digits
+  (`GUEST00`, `S0`, `T0`, `LATE0`). Digits are exactly what the
+  name-plausibility guard rejects, so under B3 those rows stop being guests.
+  Renamed to letter suffixes (`GUESTA`, `SA`, `TA`, `LATEA`), preserving every
+  prefix-keyed assertion. No count, arithmetic or assertion changes.
+- `test_eval_harness.py` — the §3 self-check passed polish through a shim with
+  **no stays** (`R(parse_polish())`), so its `unrecognized` rows would be
+  invisible to `reconcile` and completeness would read `complete` against A7's
+  `awaiting_completion`. Polish now goes through `transcribe_with_stays`, as
+  park and textmail already did.
+
+This commit is **green under the pre-B3 engine** — that is what makes it a
+legitimate standalone commit rather than a piece of commit 1.
+
 **Commit 1 — engine floor**
 
 - `parser.py` — `_value` crash guard (B1); `sex_mf` + `ymd_date` in
@@ -260,6 +276,19 @@ speculative growth.
 `run.py`, `run_lists.py`, `run_llm.py`, `parse_mix18.py`, `data/`.
 
 ## 5. Every changed assertion, old → new
+
+**Commit 0 — two misses this table did not anticipate**
+
+The blast radius was enumerated across the four dev lists and missed the
+**synthetic** fixtures. Both were found by the build, not by review:
+
+| file | old | new |
+|---|---|---|
+| `test_supplements.py` ×8, `test_audit.py` ×1 | fake guests named `GUEST00`, `S0`, `T0`, `LATE0` | letter suffixes (`GUESTA`, `SA`, `TA`, `LATEA`) — a digit-bearing name is not a person under 3b, so these rows would have become unrecognized stays and broken the supplement arithmetic |
+| `test_eval_harness.py` self-check | `"polish": R(parse_polish())` — a shim with **no stays** | `transcribe_with_stays(read_xlsx_rows(POLISH_XLSX), POLISH_MAP)` — without real stays polish's unrecognized rows are invisible and completeness reads `complete` |
+
+Neither weakens an assertion: the first is a fixture-realism fix, the second
+makes the self-check exercise the path it always claimed to.
 
 **Commit 1**
 
@@ -319,6 +348,10 @@ still aces its own (now richer) expectations.
 - **The one architectural rule** — no new LLM call sites; `build_prompt` gains
   two descriptive bullets only.
 - **The holdout** — A1 makes the seal executable for the first time.
+- **Synthetic fixture names must pass the name-plausibility guard** — a name
+  the guard rejects is not a person to the engine, so a fixture the guard
+  would reject tests a shape the product does not have (new rule, learned in
+  commit 0).
 
 ## 7. Test plan
 

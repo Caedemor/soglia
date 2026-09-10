@@ -115,7 +115,7 @@ def test_supplement_resets_assertion():
     mark_complete_override(c, v1, actor="wardo", reason="hand-entered")
     assert version_completeness(c, v1)["status"] == "complete_by_override"
 
-    supp = transcribe_with_stays([["", f"S{i}", "X"] for i in range(5)], _SUPP_MAP)
+    supp = transcribe_with_stays([["", f"S{chr(65 + i)}", "X"] for i in range(5)], _SUPP_MAP)
     v2 = apply_supplement(c, v1, supp, source_filename="supp.txt")
     vc2 = version_completeness(c, v2)
     assert vc2["status"] == "awaiting_completion" and vc2["pending"] == 13, \

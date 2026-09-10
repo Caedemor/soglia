@@ -107,7 +107,7 @@ def test_flagship_monday_to_wednesday():
 
 # --- the stepfather numbers, literally ------------------------------------------
 def test_stepfather_numbers():
-    rows = [["", f"GUEST{i:02d}", "X"] for i in range(25)] + [["+ 5 pax", "", ""]]
+    rows = [["", f"GUEST{chr(65 + i)}", "X"] for i in range(25)] + [["+ 5 pax", "", ""]]
     v1res = transcribe_with_stays(rows, _SUPP_MAP)
     assert len(v1res.guests) == 25 and sum(
         s.pax_expected for s in v1res.stays if s.status == "names_pending") == 5
@@ -117,7 +117,7 @@ def test_stepfather_numbers():
                                         build_pms_csv(v1res.guests, v1res.stays)),
                    actor="wardo")
 
-    v2 = apply_supplement(c, v1, _supp([f"LATE{i}" for i in range(5)]),
+    v2 = apply_supplement(c, v1, _supp([f"LATE{chr(65 + i)}" for i in range(5)]),
                           source_filename="supp.txt")
     delta = pms_delta(c, v2)
     assert len(delta) == 5 and all(g.cognome.startswith("LATE") for _, g in delta), \
@@ -135,7 +135,7 @@ def test_short_supplement_and_immutability():
     c, v1 = _fresh(res.guests, res.stays)
     g1_before, s1_before, _ = _state(c, v1)
 
-    v2 = apply_supplement(c, v1, _supp([f"S{i}" for i in range(5)]),
+    v2 = apply_supplement(c, v1, _supp([f"S{chr(65 + i)}" for i in range(5)]),
                           source_filename="supp.txt")
     g2, s2, rec = _state(c, v2)
     block = [s for s in s2 if s.source_row is None][0]
@@ -191,9 +191,9 @@ def test_chain_of_two_supplements():
                                         build_pms_csv(res.guests, res.stays)),
                    actor="wardo")
 
-    v2 = apply_supplement(c, v1, _supp([f"S{i}" for i in range(10)]),
+    v2 = apply_supplement(c, v1, _supp([f"S{chr(65 + i)}" for i in range(10)]),
                           source_filename="s1")
-    v3 = apply_supplement(c, v2, _supp([f"T{i}" for i in range(8)]),
+    v3 = apply_supplement(c, v2, _supp([f"T{chr(65 + i)}" for i in range(8)]),
                           source_filename="s2")
     g3, s3, rec = _state(c, v3)
     block = [s for s in s3 if s.source_row is None][0]
@@ -219,7 +219,7 @@ def test_floor_through_supplement():
     c, v1 = _fresh(res.guests, res.stays)
     # a supplement file with 2 names, a junk residue row, and its OWN held row
     supp = transcribe_with_stays(
-        [["", "S0", "X"], ["", "S1", "X"],
+        [["", "SA", "X"], ["", "SB", "X"],
          ["Totale: 47", "", ""], ["+ 3 autisti", "", ""]],
         _SUPP_MAP)
     v2 = apply_supplement(c, v1, supp, source_filename="messy-supp.txt")
@@ -243,7 +243,7 @@ def test_floor_through_supplement():
 def test_relation_and_legacy_migration():
     res = parse_park_stays()
     c, v1 = _fresh(res.guests, res.stays)
-    v2 = apply_supplement(c, v1, _supp(["S0"]), source_filename="s")
+    v2 = apply_supplement(c, v1, _supp(["SA"]), source_filename="s")
     rels = dict(c.execute("SELECT id, relation_to_prior FROM list_version"))
     assert rels[v1] == "initial" and rels[v2] == "supplement"
     c.close()
@@ -283,7 +283,7 @@ def test_relation_and_legacy_migration():
                     stays=res.stays)
     ids = [gid for gid, _ in load_guests_with_ids(c, vid)]
     confirm_export(c, record_pms_export(c, vid, ids, "artifact"), actor="wardo")
-    v2 = apply_supplement(c, vid, _supp(["S0", "S1"]), source_filename="s")
+    v2 = apply_supplement(c, vid, _supp(["SA", "SB"]), source_filename="s")
     assert len(pms_delta(c, v2)) == 2 and export_coverage(c, v2) == "partial"
     c.close()
     os.remove(DB)
