@@ -346,3 +346,34 @@ audit's ground-truth finding — a later cycle, deliberately not bootstrapped);
 promoting `unrecognized_rows` to a gate; the `held_row` prompt unfreeze and
 the textmail stage-1 fixture; type-validation inside `parse_map_json`;
 room-type-column mapping; the Bedzzle builder; the app tiers; any live run.
+
+---
+
+## 9. Postscript — approved (2026-09-10)
+
+Approved as drawn. The three caveats from §2 are resolved as follows, and two
+additions were made to the build.
+
+- **Caveat 1 — resolved: `unrecognized_rows` stays a SOFT metric.** Promotion
+  to a hard gate waits for a **second list carrying residue rows**; with only
+  polish's two Driver rows in the corpus, a gate would be pinned to a single
+  list's shape. The floor itself remains directly guarded by `test_stay`,
+  `test_textmail` and the new B3 pins, so this is a reporting gap, not a
+  safety one. Revisit when the corpus grows.
+- **Caveat 2 — taken.** The `required_fields` gate detail records
+  matched / expected / total-persons, e.g.
+  `{"data_nascita": "47/47 of 47", "numero_documento": "46/46 of 47"}`, so a
+  gate that is green only because ground truth is thin is visible as such.
+- **Caveat 3 — resolved: keep both existing `labels/` filenames.** No rename;
+  the json and its spreadsheet twin stay together under their descriptive
+  names.
+
+**Addition to A3.** `transcribe_error` must be added to the gate-name tuple in
+`evaluate_list`, so it participates in `passed` rather than sitting in the
+detail dict unread. Pinned with an injected map whose transcription raises:
+that list FAILS and **the campaign continues** to the remaining lists.
+
+**Addition to A4.** Retry **only** on timeouts, 429 and 5xx; any other 4xx
+raises immediately (an auth or malformed-request error is not transient, and
+retrying it burns the user's spend for nothing). Both behaviors pinned with a
+fake `urlopen` and an injected no-op sleep.
